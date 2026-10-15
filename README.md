@@ -58,4 +58,4 @@ La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos 
 | `brands/` | Marcas guardadas (las propias no se suben al repo; `editorial` es la de ejemplo) |
 | `reference/` | Catálogo de escenas y un ejemplo completo |
 
-Tipografías de `brands/editorial/fonts` y las que baja `brand.py`: Google Fonts (SIL Open Font License). La música de Envato se usa como vista previa con marca de agua hasta licenciarla.
+Tipografías de `brands/editorial/fonts` y las que baja `brand.py`: Google Fonts (SIL Open Font License). La música de Envato se licencia y descarga desde tu sesión de Envato en el navegador de la app de Claude (iniciás sesión vos una vez; Claude nunca usa tu contraseña) y se reemplaza la vista previa por el WAV original, sin marca de agua.

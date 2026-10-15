@@ -59,7 +59,14 @@ Crear `$SK/brands/<slug>/brand.json` copiando `brands/editorial/brand.json` (en 
 - Si el usuario dio música: `"music": {"path": "/abs/tema.mp3", "offset": 0}`.
 - Si no, **elegirla vos según el guion, sin preguntar**: leer tono, tema y público (dato duro o urgente → enérgica, Upbeat 110–140 BPM; empático, salud, cuidado → cálida/inspiradora, Medium 90–110; institucional o explicativo → corporativa tranquila; humor → juguetona). Buscar en Envato (siempre instrumental): `$PY $SK/scripts/envato.py search "<work>" music "<estilo en inglés>" --mood <mood> --tempo "<tempo>" [--genre <género>]`. Elegir por tono y por el perfil de energía (parejo, sin caídas largas durante el largo del video; si la música es más corta que el video se repite sola) y `$PY $SK/scripts/envato.py use "<work>" music <búsqueda>#<n>`. Poner `offset` (segundo donde entra la parte con energía; mirar el perfil ▁▂▃█).
 - Niveles automáticos en mix.py: más fuerte antes de la voz (`intro` −8 dB), baja debajo de la voz (`bed` −21 dB), sube en la cola (`outro` −10 dB) y fade final. Ajustables en `config.music`.
-- La vista previa de Envato tiene marca de agua: en la entrega avisar que hay que licenciarla. Con navegador con sesión de Envato: pedir confirmación una vez, licenciar con el nombre del video y descargar en WAV; si no, darle el link al usuario. Luego `$PY $SK/scripts/envato.py collect "<work>"` y volver a correr **solo** `mix.py` (no hace falta re-renderizar).
+- **Licenciar y descargar la original (siempre, para entregar sin marca de agua)** — la vista previa de Envato tiene marca de agua audible:
+  1. **Nunca iniciar sesión con usuario y contraseña** (ni aunque el usuario los pase). Se usa la sesión del usuario en el **navegador de la app** (built-in browser, sesión persistente). Si no está logueado: abrir la página del tema y pedirle que inicie sesión él (una sola vez).
+  2. **Pedir una sola confirmación por video** antes de licenciar ("licencio *<tema>* de *<autor>*, ¿dale?"): licenciar es aceptar una licencia a nombre del usuario.
+  3. Abrir el link del ítem (`config.music.envato.url`) → redirige a `app.envato.com` → clic en **Descargar**. La cuenta del usuario tiene **licencia automática** ("Licenciado automáticamente"); si en otra cuenta aparece un diálogo de proyecto, licenciar con el nombre del video.
+  4. El navegador de la app no guarda archivos en la Mac: leer las solicitudes de red (`read_network_requests` con patrón `download`), abrir la respuesta de `download.data` y tomar el `downloadUrl` firmado (vence en minutos). Bajarlo con `curl -sSL --fail -o <scratchpad>/envato_dl/<slug>.zip "<downloadUrl>"` (carpeta nueva y vacía).
+  5. `$PY $SK/scripts/envato.py collect "<work>" --file music <zip>` (elige el WAV del zip) → volver a correr **solo** `mix.py` y `build_xml.py` (no hace falta re-renderizar). Verificar con `envato.py report` que diga ✅ licenciado.
+  6. Avisar si la página dice **"No está listo para ver Claim Clear"**: en YouTube puede aparecer un reclamo de Content ID que se resuelve con la licencia (en Instagram/TikTok no afecta).
+  - Si no hay navegador o el usuario no quiere: darle el link para que lo baje él y después `envato.py collect "<work>"` (busca en ~/Downloads).
 
 ## 4 · Storyboard → `<work>/story.js`
 Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S(tipo, inicio, params)` por escena, en orden:
@@ -98,7 +105,7 @@ Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S
 ## 6 · Entrega
 - `$PY $SK/scripts/timing.py report "<work>"`.
 - `LEEME.md` en `out_dir`: **cómo abrirlo en Premiere** (Archivo → Importar → `<NAME>_premiere.xml`; no mover ni renombrar la carpeta; tabla de pistas; qué se edita ahí — cortar/mover/borrar escenas, re-timear frases de la voz, cambiar música y volúmenes, sacar SFX, usar el `.srt` como subtítulos nativos — y qué no: el texto dentro de cada gráfico, que se cambia pidiéndoselo a Claude), voz usada, marca, formato, duración, estructura (tabla escena → texto → tiempo), música (con `envato.py report` y si falta licenciar), SFX, tiempo de procesamiento, cómo pedir cambios.
-- Responder corto: ruta del MP4 y del XML, duración, voz y música elegidas (con una línea de por qué esa música) (avisar si la música es vista previa sin licenciar), escenas destacadas, tiempo total.
+- Responder corto: ruta del MP4 y del XML, duración, voz y música elegidas (con una línea de por qué esa música; confirmar que quedó licenciada o avisar si quedó la vista previa), escenas destacadas, tiempo total.
 
 ## Versiones (v2, ajustes)
 Reusar `.work`: cambiar `script.json` (voz/texto: solo se regeneran los beats tocados) y/o `story.js`, apuntar `out_dir` a `<NAME>_MOTION_v2` y repetir desde el paso que corresponda (cambio de música o volumen → solo `mix.py` + `build_xml.py`; cambio visual → render + mix + `render.js --premiere --only=<n.º de escena>` + `build_xml.py`; cambio de texto → tts + todo).
