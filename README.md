@@ -38,7 +38,7 @@ Cada persona usa **su propia clave** (nunca se sube al repo). El instalador la p
 ```bash
 mkdir -p ~/.config/motion && printf '%s' 'TU_CLAVE' > ~/.config/motion/elevenlabs_key && chmod 600 ~/.config/motion/elevenlabs_key
 ```
-La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos *Text to Speech*, *Voices: Read* y *Sound Effects*. Sin clave, la skill usa edge-tts (gratis). Se puede usar una voz clonada propia con su `voice_id`.
+La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos *Text to Speech*, *Voices: Read* y *Sound Effects*. Voces por defecto: **Agustina** (mujer) y **Manuel** (hombre), argentinas. Sin clave, la skill usa Elena y Tomás de edge-tts (gratis). Se puede usar cualquier otra voz, o una voz clonada propia (requiere un plan pago de ElevenLabs), con su `voice_id`.
 
 ## Uso
 - **Claude Code:** `/motion` y pegá el guion (o `/motion ruta/al/guion.txt`).

@@ -6,7 +6,8 @@ uso: $PY tts.py <work>                 lee <work>/script.json → <work>/voice.w
      $PY tts.py samples <carpeta> "<frase>" <voz1> <voz2> …   una muestra por voz (edge o voice_id de ElevenLabs) para comparar
 
 script.json:
-{ "voice": {"engine":"edge", "id":"es-AR-ElenaNeural", "rate":"+5%", "pitch":"+0Hz"},
+{ "voice": {"id":"mujer"}          ← "mujer" = Agustina · "hombre" = Manuel (ElevenLabs si hay clave; si no, Elena / Tomás de edge-tts)
+             o una voz puntual: {"engine":"edge", "id":"es-AR-ElenaNeural", "rate":"+5%", "pitch":"+0Hz"},
   "lead": 0.35,                      ← segundos de imagen antes de que arranque la voz
   "beats": [ {"id":"b01", "text":"¿Sabés por qué…?", "say":"(opcional: texto para pronunciar)", "pause":0.25}, … ] }
 engine "eleven": {"engine":"eleven","id":"<voice_id>","model":"eleven_multilingual_v2","stability":0.45,"similarity":0.8,"style":0.2,"speed":1.05}
@@ -75,8 +76,20 @@ def eleven(text,v,mp3,prev=None,nxt=None):
     return [w for w in ws if re.search(r'\w',w['w'])]
 def raise_(m): raise SystemExit(m)
 
+# Voces por defecto (argentinas). Con clave de ElevenLabs: Agustina (mujer) y Manuel (hombre); sin clave: edge-tts.
+DEFAULTS={'eleven':{'mujer':('TZvhlMgMw2P4gPSuD8v7','Agustina'),'hombre':('L7pBVwjueW3IPcQt4Ej9','Manuel')},
+          'edge':{'mujer':('es-AR-ElenaNeural','Elena'),'hombre':('es-AR-TomasNeural','Tomás')}}
+def resolve(v):
+    """"id": "mujer" | "hombre" → la voz por defecto (ElevenLabs si hay clave o si engine es "eleven"; si no, edge-tts)."""
+    g=str(v.get('id','')).lower()
+    if g not in('mujer','hombre'): return v
+    eng=v.get('engine') or ('eleven' if eleven_key(False) else 'edge')
+    vid,name=DEFAULTS[eng][g];r={**v,'engine':eng,'id':vid,'name':name}
+    if eng=='edge': r.setdefault('rate','+5%')
+    print(f'voz por defecto ({g}): {name} · {"ElevenLabs" if eng=="eleven" else "edge-tts (gratis)"}');return r
+
 def run(W):
-    t0=time.time();S=json.load(open(os.path.join(W,'script.json')));v=S['voice'];lead=S.get('lead',.35)
+    t0=time.time();S=json.load(open(os.path.join(W,'script.json')));v=resolve(S['voice']);lead=S.get('lead',.35)
     C=os.path.join(W,'voice','cache');os.makedirs(C,exist_ok=True)
     parts=[];words=[];beats=[];cur=lead;gen=0;SAY=[b.get('say') or b['text'] for b in S['beats']];EL=v.get('engine')=='eleven'
     if EL: print(f"ElevenLabs · voz {v['id']} · {v.get('model','eleven_multilingual_v2')} · el guion completo son {sum(map(len,SAY))} caracteres (solo se cobran los beats que cambian)")
@@ -104,7 +117,7 @@ def run(W):
     nw=len(words);print(f'✓ voz: {total:.1f} s ({nw} palabras, {nw/max(.1,total-lead):.2f} pal/s) · {gen} beat(s) generados, {len(parts)-gen} de caché')
     for b in beats: print(f"  {b['id']}  {b['s']:6.2f}–{b['e']:6.2f}  {b['text'][:70]}")
     tgt=S.get('target',60)
-    if total>tgt+6: print(f'⚠️  La voz dura {total:.0f} s (objetivo ≈{tgt} s). Subir "rate" (máx. +15%) o proponer recortes al usuario.')
+    if total>tgt+6: print(f'⚠️  La voz dura {total:.0f} s (objetivo ≈{tgt} s). Acelerar ("rate" hasta +15% en edge, "speed" hasta 1.15 en ElevenLabs) o proponer recortes al usuario.')
     elif total<tgt-15: print(f'ℹ️  La voz dura {total:.0f} s: más corta que el objetivo ({tgt} s). Está bien si el guion es corto; no estirar.')
     timing.log(W,'Locución',time.time()-t0)
 

@@ -17,7 +17,7 @@ Si `doctor.py` marca algo con ✗: `bash $SK/scripts/install.sh` (Windows: `powe
 ## 0 · Preguntas iniciales (SIEMPRE, antes de producir)
 Leer primero el guion y `$PY $SK/scripts/brand.py list` (marcas guardadas). Después preguntar **todo junto en una sola tanda** (en Claude Code con la herramienta AskUserQuestion; en Codex u otros, un solo mensaje numerado). No preguntar lo que el usuario ya dijo.
 1. **Voz** — si la marca elegida tiene `voice` guardada, ofrecer primero *La de la marca (<nombre>)*. Si no: *Mujer* o *Hombre*, por defecto **argentina**.
-   - Motor: si `doctor.py` muestra la clave de ElevenLabs, usar **ElevenLabs** (más natural) por defecto y ofrecer edge-tts como alternativa gratis; si no hay clave, edge-tts (`es-AR-ElenaNeural` / `es-AR-TomasNeural`) y mencionar una vez que con una clave de ElevenLabs suena más natural.
+   - **Voces por defecto** (elección del usuario): mujer → **Agustina** (ElevenLabs `TZvhlMgMw2P4gPSuD8v7`), hombre → **Manuel** (ElevenLabs `L7pBVwjueW3IPcQt4Ej9`). En `script.json` alcanza con `"voice": {"id":"mujer"}` o `{"id":"hombre"}`: tts.py usa ElevenLabs si hay clave y, si no, Elena / Tomás de edge-tts (gratis); en ese caso mencionar una vez que con una clave de ElevenLabs suena más natural. Ofrecer otras voces solo si el usuario lo pide.
    - Elegir voz de ElevenLabs: `tts.py voices eleven argentine` (voces propias, incluida una voz clonada del usuario, y biblioteca rioplatense), generar 3–4 muestras con `tts.py samples "<work>/muestras_voz" "<primera frase del guion>" <id1> <id2> …`, dárselas al usuario para escuchar y usar la que elija. Guardarla en la marca (`brand.json` → `"voice": {"engine":"eleven","id":"…","name":"…"}`) para no volver a preguntar.
    - Otro acento: la voz de ese país (`tts.py voices es` lista las de edge: es-UY, es-MX, es-ES, es-CL, es-CO…; en ElevenLabs, `voices eleven <acento>`).
    - **Clave de ElevenLabs**: nunca va en el repo ni en la skill. Si el usuario quiere ElevenLabs y no hay clave, pedirle que la cree (elevenlabs.io → Developers → API Keys, con permisos *Text to Speech*, *Voices: Read* y *Sound Effects*) y la guarde él mismo con `mkdir -p ~/.config/motion && printf '%s' 'CLAVE' > ~/.config/motion/elevenlabs_key && chmod 600 ~/.config/motion/elevenlabs_key`; si la pega en el chat, guardarla así y sugerir rotarla después.
@@ -48,9 +48,9 @@ Crear `$SK/brands/<slug>/brand.json` copiando `brands/editorial/brand.json` (en 
 - Partir en **beats** (1 frase o idea, 2–6 s cada uno; 10–18 beats para 1 minuto). Cada beat suele ser una escena.
 - `say` (opcional) = cómo se pronuncia cuando el texto escrito confunde a la voz: números grandes ("70 %" → "setenta por ciento"), siglas ("OMS" → "o eme ese"), símbolos, años, abreviaturas. `text` queda como está escrito.
 - `pause` = silencio después del beat (default 0,38 s si termina en punto/pregunta, 0,18 s si no). Más pausa (0,6) antes de un remate o del CTA.
-- `<work>/script.json`: `{"voice":{"engine":"edge","id":"es-AR-ElenaNeural","rate":"+5%"},"lead":0.35,"target":60,"beats":[{"id":"b01","text":"…"},…]}`
+- `<work>/script.json`: `{"voice":{"id":"mujer"},"lead":0.35,"target":60,"beats":[{"id":"b01","text":"…"},…]}` (o la voz guardada en la marca / elegida). Con ElevenLabs el ritmo se ajusta con `"speed"` (0.9–1.15) en vez de `"rate"`.
 - `$PY $SK/scripts/tts.py "<work>"` → `voice.wav` + `words.json` (tiempo de cada palabra) y la duración. Duración objetivo ≈ 60 s:
-  - más de 66 s → subir `rate` (máximo `+15%`); si igual se pasa, **proponer recortes concretos al usuario y esperar respuesta**.
+  - más de 66 s → acelerar (`rate` hasta `+15%` en edge-tts, `speed` hasta `1.15` en ElevenLabs); si igual se pasa, **proponer recortes concretos al usuario y esperar respuesta**.
   - más corta → está bien, no estirar el guion (se puede bajar `rate` hasta `-5%` si suena apurada).
 - Escuchar mentalmente el ritmo: si un beat queda muy largo (> 7 s), partirlo. Solo se regeneran los beats que cambian (caché).
 
