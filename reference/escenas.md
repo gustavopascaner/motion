@@ -22,6 +22,7 @@ Clases dentro de textos: `H('x')` caja resaltada · `A('x')` color de acento · 
 | `quote` | `text?, author, authorAt, font:'display'?, size=104` | cita o frase de alguien; se ilumina palabra por palabra |
 | `phone` | `kick, name, msgs:[{t, at, me}]` | chat/mensajes (con "escribiendo…" antes de cada respuesta) |
 | `image` | `src (ruta), kb:[100,112], origin, kick, lines, at` | foto a pantalla completa con Ken Burns y título |
+| `concept` | `motif, at (momento clave = w('palabra')), seed?, n?` — **sin texto** | animación conceptual de 3–4 s con formas, líneas y partículas (obligatoria: una por video) |
 | `cta` | `kick, lines, handle (solo si el usuario lo pide explícitamente; nunca inventarlo ni sacarlo de la marca), action:'follow'\|'comment'\|'save'\|'link'\|'dm', btnAt, word (comment), btn, done, logo:false` | cierre: logo + llamado + botón que se aprieta |
 
 Íconos (`mark`, `icon`): user, users, heart, clock, chat, star, chart, trend, phone, calendar, money, check, x, bolt, search, target, lock, idea, home, mail, play, shield, rocket, gift, pin, camera, med, eye, globe, smile, alert, bookmark, send, arrow, plus.
@@ -37,3 +38,24 @@ En engine.html: `SC.nombre=(p,c)=>{ …armar el DOM dentro de c.box con h(), ml(
 `c` = `{box, inner, root, D (duración), words (palabras de la escena, tiempos locales), th (colores), area, port}`.
 Helpers: `P(t,a,d)` progreso 0–1 · `E.expo/back/el/o3/io` · `rise(el,t,a)` máscara que sube · `popIn` · `fadeUp` · `split(el)` letras · `syncWords(tokens,words)` · `icon(nombre)` · `fmtNum`.
 Usar solo colores `var(--fg)`, `var(--bg)`, `var(--hl)`, `var(--hlfg)`, `var(--sub)` para que funcione con cualquier marca. La función tiene que ser pura del tiempo (se renderiza en paralelo). Sumar su sonido en `AUTO` de render.js. Probar con `--test`.
+
+## Motivos de `concept` (animaciones sin texto)
+Todos usan los colores del tema de la escena (`--fg`, `--hl`) y tienen un **momento clave** en `at` (default: mitad de la escena, máx. 1,8 s), que conviene sincronizar con la palabra del concepto.
+| motivo | qué muestra | para ideas como |
+|---|---|---|
+| `growth` | barras que suben + línea de tendencia + punto que late | crecer, mejorar, resultados, más pacientes |
+| `network` | nodos que aparecen y se conectan con un centro que se enciende | comunidad, recomendaciones, contactos, sistema |
+| `cycle` | flechas en círculo que giran y aceleran | hábitos, repetir, constancia, proceso continuo |
+| `funnel` | muchas partículas entran a un embudo y pasan pocas | filtrar, elegir, conversión, los correctos |
+| `target` | anillos concéntricos y un dardo que da en el centro | objetivo, foco, precisión, público ideal |
+| `balance` | balanza que oscila y se equilibra | equilibrio, decisión, comparar, justo |
+| `breakthrough` | pelota que rompe una pared de bloques | superar un obstáculo, romper una barrera |
+| `order` | puntos caóticos que se ordenan en una grilla | orden, método, sistema, claridad |
+| `pulse` | electrocardiograma que se dibuja + corazón que late | salud, vida, cuidado, emoción |
+| `path` | camino curvo con un marcador que llega a la bandera | recorrido, proceso, meta, paso a paso |
+| `attract` | partículas atraídas hacia un centro que crece | atraer pacientes, magnetismo, interés |
+| `dialog` | dos personas, ondas de ida y vuelta y aparece un corazón | escuchar, comunicar, vínculo, empatía |
+| `split` | camino que se bifurca; uno se apaga y el otro se resalta | elegir, decisión, el camino correcto |
+| `stack` | bloques que caen y forman una torre | construir, acumular, paso a paso, base |
+
+Nuevo motivo: `MOT.nombre=(g,p,a,D,r)=>{ …dibujar con sv('circle'|'path'|'line'|…, attrs, g, css)… return t=>{…} }` en un lienzo SVG de 1000×1000 (zona visible ≈110–890). Helpers: `spop` (aparecer), `dash` (dibujar líneas), `ripple` (onda), `r()` aleatorio con semilla. Colores solo con `FG`, `HL`, `HL2`, `SUB`. Probar con `--test --at=0.5,<at>,end`.

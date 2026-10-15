@@ -110,6 +110,10 @@ function review(tl,vo){const w=[],S=tl.scenes;
     if(x.type==='kinetic'&&(x.p.text||x.words.map(y=>y.w).join(' ')).split(/\s+/).length>14)w.push(`escena ${i} (kinetic) tiene más de 14 palabras: usar "text" con la frase clave`);
     if(Object.keys(x.p).some(k=>/^(at|.*At|countEnd)$/.test(k)&&x.p[k]>D))w.push(`escena ${i}: un tiempo interno cae después del final de la escena`);});
   if(S[S.length-1].type!=='cta')w.push('la última escena no es un "cta"');
+  const cc=S.filter(x=>x.type==='concept');
+  if(!cc.length)w.push('falta una escena "concept": ilustrar un concepto del guion con una animación sin texto (3–4 s)');
+  cc.forEach(x=>{const D=x.e-x.s;if(D<2.5||D>4.8)w.push(`la escena concept (${x.p.motif}) dura ${D.toFixed(1)} s: tiene que durar 3–4 s`);
+    if(x.p.kick&&x.p.kick.length>24)w.push('la escena concept no debería tener texto (como mucho un kick muy corto)');});
   if(S[0].e>4)w.push(`el gancho dura ${S[0].e.toFixed(1)} s: el primer cambio de imagen tendría que llegar antes de los 3–4 s`);
   const n=S.length,T=tl.total;if(T/n>5.5)w.push(`${n} escenas en ${T.toFixed(0)} s (una cada ${(T/n).toFixed(1)} s): sumar escenas, el ritmo ideal es una cada 3–5 s`);
   return w;}

@@ -76,6 +76,7 @@ Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S
 - Helpers de texto: `H('texto')` = resaltado en caja de color · `A('texto')` = texto en color de acento.
 
 **Criterio de dirección (obligatorio):**
+- **Una escena `concept` por video (obligatoria): un motion graphic SIN TEXTO de 3–4 s.** Elegir el concepto del guion que más gane visto como imagen (un proceso, una relación, un cambio, una idea abstracta) y animarlo con formas, líneas y partículas: crecimiento, red, ciclo, filtro, foco, equilibrio, romper una barrera, del caos al orden, latido, camino, atracción, diálogo, bifurcación, acumulación (`motif`, ver `reference/escenas.md`). Ubicarla donde la idea se dice, con `at: w('palabra clave')` para que el momento fuerte de la animación caiga en esa palabra. Si ningún motivo representa bien la idea, crear uno nuevo en `engine.html` (`MOT.nombre`, siguiendo el patrón de los existentes) en vez de forzar uno que no corresponde. Sin kick ni títulos: la imagen cuenta sola (los subtítulos siguen abajo).
 - **Gancho en los primeros 2 s**: `question`, `bigword`, `kinetic` o `title` fuerte, en fondo `accent`. El primer cambio de escena antes de los 3–4 s.
 - **Ritmo**: una escena cada 3–5 s (12–18 escenas por minuto). Nada quieto más de ~5 s: si la escena es larga, que se vaya armando (ítems sincronizados).
 - **Variedad**: no repetir el tipo de escena seguido; máximo 2 `kinetic` seguidas; alternar escenas de texto con gráficas (`stat`, `bars`, `donut`, `icons`, `steps`, `compare`, `phone`).

@@ -6,7 +6,8 @@ S('compare','b02',{kick:'NO ES…',left:{title:'EL PRECIO',items:[{t:'Cobrar men
 S('stat','b03',{kick:'PACIENTES QUE NO REGRESAN',value:70,suffix:'%',at:w('setenta'),countEnd:w('pacientes'),label:'NO SE SINTIÓ<br>ESCUCHADO',sub:'Dato de ejemplo'});
 S('title','b04',{kick:'LA BUENA NOTICIA',lines:['3 HÁBITOS','<span class="hlc">SIMPLES</span>'],sub:'y se arregla',at:[w('arregla'),w('simples')]});
 S('icons','b05',{kick:'HÁBITO 01',title:'MIRÁ A LOS OJOS',items:[{icon:'eye',t:'Contacto visual',at:w('ojos')},{icon:'clock',t:'Primeros 10 segundos',at:w('diez')}]});
-S('kinetic','b06',{kick:'HÁBITO 02',text:'Repetí con tus palabras lo que te contó',hl:['palabras']});
+S('kinetic','b06',{kick:'HÁBITO 02',text:'Repetí con tus palabras',hl:['palabras']});
+S('concept',w('lo'),{motif:'dialog',bg:'accent',at:w('diagnostico')});   // MG sin texto: escuchar → devolver → vínculo
 S('phone','b07',{kick:'HÁBITO 03 · A LAS 48 H',name:'Laura Gómez',msgs:[{t:'Hola Laura, ¿cómo seguís?',me:true,at:w('escribile')},{t:'¡Mucho mejor! Gracias por escribirme 🙌',at:w('sigue')}]});
 S('bigword','b08',{kick:'CUESTA 30 SEGUNDOS',lines:['LO','RECUERDA'],size:250,sub:'durante meses',subAt:w('meses')});
 S('compare','b09',{kick:'LA DIFERENCIA',left:{title:'ANTES',items:[{t:'Se iba con una receta',at:w('receta')}]},right:{title:'AHORA',at:w('ahora'),items:[{t:'Se va sintiéndose cuidado',at:w('cuido')}]}});
