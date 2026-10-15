@@ -1,0 +1,14 @@
+{"voice":{"engine":"edge","id":"es-AR-ElenaNeural","rate":"+6%"},"lead":0.35,"target":60,
+ "beats":[
+ {"id":"b01","text":"¿Sabés por qué tus pacientes no vuelven?"},
+ {"id":"b02","text":"No es el precio. Y tampoco es la competencia."},
+ {"id":"b03","text":"El setenta por ciento de los pacientes que no regresan dicen lo mismo: no se sintieron escuchados."},
+ {"id":"b04","text":"La buena noticia es que se arregla con tres hábitos simples."},
+ {"id":"b05","text":"Uno: mirá a los ojos en los primeros diez segundos de la consulta."},
+ {"id":"b06","text":"Dos: repetí con tus palabras lo que te contó, antes de dar un diagnóstico."},
+ {"id":"b07","text":"Tres: escribile a las cuarenta y ocho horas para preguntar cómo sigue."},
+ {"id":"b08","text":"Ese mensaje cuesta treinta segundos, pero el paciente lo recuerda durante meses."},
+ {"id":"b09","text":"Antes, el paciente se iba con una receta. Ahora se va con la sensación de que alguien lo cuidó."},
+ {"id":"b10","text":"Y un paciente que se siente cuidado vuelve, y además te recomienda."},
+ {"id":"b11","text":"Si te sirvió, seguime para más ideas que hacen crecer tu consultorio."}
+ ]}

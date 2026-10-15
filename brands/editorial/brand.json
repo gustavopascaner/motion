@@ -1,0 +1,14 @@
+{
+ "name": "Editorial (estilo edicion)",
+ "colors": {"dark": "#0E0D0C", "light": "#F3EEE5", "accent": "#FF5A1F", "accent2": "#D4FF3A", "mute": "#8C857A"},
+ "fonts": {
+  "display": {"family": "Bricolage Grotesque", "files": [{"file": "fonts/Bricolage.ttf", "weight": "200 800"}], "weight": 800, "stretch": "76%", "upper": true, "tracking": "-0.02em", "leading": 0.9},
+  "body":    {"family": "Inter Tight", "files": [{"file": "fonts/InterTight.ttf", "weight": "100 900"}], "weight": 700},
+  "mono":    {"family": "JetBrains Mono", "files": [{"file": "fonts/JetBrainsMono.ttf", "weight": "100 800"}]},
+  "accent":  {"family": "Instrument Serif", "files": [{"file": "fonts/InstrumentSerif-Italic.ttf", "weight": "400", "style": "italic"}], "italic": true}
+ },
+ "logo": null,
+ "handle": "@tumarca",
+ "style": {"grain": true, "grid": true, "shapes": "blobs", "radius": 36, "progress": false},
+ "captions": {"on": true, "upper": false, "size": 64}
+}

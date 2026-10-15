@@ -1,0 +1,39 @@
+# Catálogo de escenas (engine/engine.html)
+
+Todas son a pantalla completa. Tamaños nominales para un ancho de 1080 px: el contenido se escala solo para entrar en el área segura de cada formato.
+Colores por escena con `bg`: `dark` · `light` · `accent` · `accent2`. El motor elige solo el color del texto (`--fg`), el de resaltado (`--hl`) y el texto sobre resaltado (`--hlfg`) con buen contraste.
+Tiempos internos (`at`, `*At`, `countEnd`) en **segundos locales**; escribirlos con `w('palabra')` para sincronizarlos con la voz.
+Comunes: `bg`, `tr`, `cap`, `sfx`, `valign` (`'top'|'center'|'bottom'`), `maxScale`, `logo:false`, `grid:false`, `shapes:false`.
+Clases dentro de textos: `H('x')` caja resaltada · `A('x')` color de acento · `<span class="acc">x</span>` tipografía de acento · `<br>`.
+
+| escena | params | para qué |
+|---|---|---|
+| `title` | `kick, lines:[html], size=170, sub, subAt, at:[por línea], align` | títulos de sección, presentación del tema |
+| `kinetic` | `text?` (default: lo que se dice en la escena), `hl:[palabras con caja]`, `hc:[palabras en color]`, `kick, size=150, align` | la frase aparece palabra por palabra al ritmo de la voz (sin subtítulos) |
+| `bigword` | `kick, lines:[1–2 palabras] \| word, size=260, at, sub, subAt` | remate, palabra clave letra por letra |
+| `question` | `kick, lines:[html], size=120, at:[...]` | pregunta retórica con un "?" gigante |
+| `stat` | `kick, value, from?, decimals, prefix, suffix, at, countEnd, label, sub (fuente)` | número que cuenta |
+| `donut` | `kick, value (0–100), at, label` | porcentaje en anillo |
+| `bars` | `kick, title, bars:[{l, v, at, hl}], unit, prefix, max` | comparar cantidades |
+| `list` | `kick, title, items:[{t, at, mark:'check'\|'x'\|'num'\|'dot'\|<ícono>, strikeAt}], mark` | listas que se arman (✓, ✕ tachado, 01/02…) |
+| `steps` | `kick, title, items:[{t, d?, at, icon?}]` | proceso paso a paso con línea que avanza |
+| `icons` | `kick, title, items:[{icon, t, at}], cols` | 2–4 conceptos con íconos |
+| `compare` | `kick, left:{title, items:[{t,at}], at}, right:{title, items, at}` | antes/después, mito/realidad (izquierda ✕ apagada, derecha ✓ resaltada) |
+| `quote` | `text?, author, authorAt, font:'display'?, size=104` | cita o frase de alguien; se ilumina palabra por palabra |
+| `phone` | `kick, name, msgs:[{t, at, me}]` | chat/mensajes (con "escribiendo…" antes de cada respuesta) |
+| `image` | `src (ruta), kb:[100,112], origin, kick, lines, at` | foto a pantalla completa con Ken Burns y título |
+| `cta` | `kick, lines, handle, action:'follow'\|'comment'\|'save'\|'link'\|'dm', btnAt, word (comment), btn, done, logo:false` | cierre: logo + llamado + botón que se aprieta |
+
+Íconos (`mark`, `icon`): user, users, heart, clock, chat, star, chart, trend, phone, calendar, money, check, x, bolt, search, target, lock, idea, home, mail, play, shield, rocket, gift, pin, camera, med, eye, globe, smile, alert, bookmark, send, arrow, plus.
+
+## Subtítulos
+Automáticos desde `words.json` (grupos de hasta 3 palabras, palabra activa en color de resaltado, `config.keywords` siempre resaltadas). Se apagan por defecto en `kinetic` y `quote`; en cualquier otra con `cap:false`. Se pueden desactivar en la marca (`captions.on:false`) o en el video (`config.captions:false`).
+
+## SFX automáticos
+Entrada de escena con transición → whoosh · `bigword` → hit · `stat`/`donut` → ding al terminar de contar · ítems → pop/ding · CTA → click. Se eligen los más importantes, separados, hasta `config.sfx_max` (6). Manual: `sfx` en la escena o `X('categoría|id', segundo)` en story.js.
+
+## Agregar una escena nueva
+En engine.html: `SC.nombre=(p,c)=>{ …armar el DOM dentro de c.box con h(), ml(), kick()…; return t=>{ …animar según t… } }`.
+`c` = `{box, inner, root, D (duración), words (palabras de la escena, tiempos locales), th (colores), area, port}`.
+Helpers: `P(t,a,d)` progreso 0–1 · `E.expo/back/el/o3/io` · `rise(el,t,a)` máscara que sube · `popIn` · `fadeUp` · `split(el)` letras · `syncWords(tokens,words)` · `icon(nombre)` · `fmtNum`.
+Usar solo colores `var(--fg)`, `var(--bg)`, `var(--hl)`, `var(--hlfg)`, `var(--sub)` para que funcione con cualquier marca. La función tiene que ser pura del tiempo (se renderiza en paralelo). Sumar su sonido en `AUTO` de render.js. Probar con `--test`.

@@ -1,0 +1,9 @@
+.venv/
+engine/node_modules/
+.DS_Store
+__pycache__/
+# Marcas propias: no se publican (salvo la de ejemplo)
+brands/*
+!brands/editorial/
+# Los sonidos no se publican (licencias de terceros): se usan los de la skill edicion o edicion-sfx.zip
+assets/sfx/**/*.wav
