@@ -30,7 +30,8 @@ v=ver(['node','--version']);row(bool(v) and int(v.lstrip('v').split('.')[0])>=18
 ok=os.path.isdir(os.path.join(SK,'engine','node_modules','puppeteer-core'));row(ok,'Dependencias de Node','engine/node_modules' if ok else 'faltan','deps')
 c=chrome();row(bool(c),'Google Chrome',c or 'no encontrado','chrome')
 v=ver([VPY,'-c','import edge_tts;print(edge_tts.__version__)']) if os.path.exists(VPY) else None;row(bool(v),'Voz (edge-tts)',f'edge-tts {v} en .venv' if v else 'falta el entorno .venv','deps')
-row(bool(os.environ.get('ELEVENLABS_API_KEY')),'ElevenLabs (opcional)','ELEVENLABS_API_KEY definida' if os.environ.get('ELEVENLABS_API_KEY') else 'sin clave (se usa edge-tts)',opt=True)
+KF=os.path.expanduser('~/.config/motion/elevenlabs_key');ek=os.environ.get('ELEVENLABS_API_KEY') or (os.path.exists(KF) and os.path.getsize(KF)>10)
+row(bool(ek),'ElevenLabs (opcional)',('clave en ELEVENLABS_API_KEY' if os.environ.get('ELEVENLABS_API_KEY') else 'clave en '+KF) if ek else 'sin clave (se usa edge-tts)',opt=True)
 sd=[os.path.join(SK,'assets','sfx')]+[os.path.expanduser(f'~/{d}/skills/edicion/assets/sfx') for d in('.claude','.codex')]
 n,where=next(((len(glob.glob(os.path.join(d,'*','*.wav'))),d) for d in sd if glob.glob(os.path.join(d,'*','*.wav'))),(0,''))
 row(n>0,'Efectos de sonido',f'{n} archivos ({where})' if n else 'no hay (opcional: instalar la skill edicion o edicion-sfx.zip)',opt=True)

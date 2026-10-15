@@ -16,7 +16,11 @@ Si `doctor.py` marca algo con ✗: `bash $SK/scripts/install.sh` (Windows: `powe
 
 ## 0 · Preguntas iniciales (SIEMPRE, antes de producir)
 Leer primero el guion y `$PY $SK/scripts/brand.py list` (marcas guardadas). Después preguntar **todo junto en una sola tanda** (en Claude Code con la herramienta AskUserQuestion; en Codex u otros, un solo mensaje numerado). No preguntar lo que el usuario ya dijo.
-1. **Voz** — *Mujer* o *Hombre*. Por defecto **argentina** (edge-tts: `es-AR-ElenaNeural` / `es-AR-TomasNeural`). Si el usuario pide otro acento usar la voz de ese país (`tts.py voices es` lista todas: es-UY, es-MX, es-ES, es-CL, es-CO…). Si tiene `ELEVENLABS_API_KEY` y quiere más realismo, ofrecer ElevenLabs (`tts.py voices eleven argentine`).
+1. **Voz** — si la marca elegida tiene `voice` guardada, ofrecer primero *La de la marca (<nombre>)*. Si no: *Mujer* o *Hombre*, por defecto **argentina**.
+   - Motor: si `doctor.py` muestra la clave de ElevenLabs, usar **ElevenLabs** (más natural) por defecto y ofrecer edge-tts como alternativa gratis; si no hay clave, edge-tts (`es-AR-ElenaNeural` / `es-AR-TomasNeural`) y mencionar una vez que con una clave de ElevenLabs suena más natural.
+   - Elegir voz de ElevenLabs: `tts.py voices eleven argentine` (voces propias, incluida una voz clonada del usuario, y biblioteca rioplatense), generar 3–4 muestras con `tts.py samples "<work>/muestras_voz" "<primera frase del guion>" <id1> <id2> …`, dárselas al usuario para escuchar y usar la que elija. Guardarla en la marca (`brand.json` → `"voice": {"engine":"eleven","id":"…","name":"…"}`) para no volver a preguntar.
+   - Otro acento: la voz de ese país (`tts.py voices es` lista las de edge: es-UY, es-MX, es-ES, es-CL, es-CO…; en ElevenLabs, `voices eleven <acento>`).
+   - **Clave de ElevenLabs**: nunca va en el repo ni en la skill. Si el usuario quiere ElevenLabs y no hay clave, pedirle que la cree (elevenlabs.io → Developers → API Keys, con permisos *Text to Speech*, *Voices: Read* y *Sound Effects*) y la guarde él mismo con `mkdir -p ~/.config/motion && printf '%s' 'CLAVE' > ~/.config/motion/elevenlabs_key && chmod 600 ~/.config/motion/elevenlabs_key`; si la pega en el chat, guardarla así y sugerir rotarla después.
 2. **Marca** — una de las guardadas (mostrarlas por nombre) o *Marca nueva*.
 3. **Formato** — *Vertical 9:16* (Reels/TikTok/Shorts, por defecto) · *Cuadrado 1:1* · *4:5* (feed) · *Horizontal 16:9* (YouTube).
 4. **Música** — *Enérgica* (Upbeat 110–140 BPM) · *Cálida/inspiradora* (Medium 90–110) · *Corporativa/tranquila* · *Tengo mi música* (pedir la ruta).
@@ -94,5 +98,5 @@ Reusar `.work`: cambiar `script.json` (voz/texto: solo se regeneran los beats to
 - Motor: `engine/engine.html` renderizado cuadro a cuadro con Chrome (puppeteer-core) en paralelo, H.264 yuv420p. Todas las escenas son funciones puras del tiempo.
 - El contenido de cada escena se escala solo para entrar en el área segura (por formato) sin desbordar; si se achica mucho, avisa.
 - SFX: usa la librería de la skill `edicion` si está instalada (o `assets/sfx` propia con el mismo `catalog.json`); si no hay sonidos, sigue sin ellos.
-- Voz: edge-tts usa el servicio de voz de Microsoft Edge (requiere internet, sin clave). ElevenLabs: `{"engine":"eleven","id":"<voice_id>"}` + variable `ELEVENLABS_API_KEY`.
+- Voz: edge-tts usa el servicio de voz de Microsoft Edge (requiere internet, sin clave). ElevenLabs: `{"engine":"eleven","id":"<voice_id>"}` en script.json; clave en `ELEVENLABS_API_KEY` o `~/.config/motion/elevenlabs_key`. Cada beat se genera con el anterior y el siguiente como contexto (entonación continua) y queda en caché: solo se cobran los beats que cambian (≈1000 caracteres por minuto de guion).
 - No usar `rm -rf` con globs relativos.

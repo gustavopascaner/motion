@@ -18,6 +18,10 @@ if [ -d "/Applications/Google Chrome.app" ] || [ -n "$CHROME" ]; then ok "Google
 info "Entorno de Python para la voz (edge-tts)..."
 [ -x "$SK/.venv/bin/python" ] || python3 -m venv "$SK/.venv"
 "$SK/.venv/bin/pip" install -q --upgrade pip edge-tts && ok "edge-tts"
+KF="$HOME/.config/motion/elevenlabs_key"
+if [ -s "$KF" ]; then ok "Clave de ElevenLabs ya guardada"
+elif [ -t 0 ]; then printf "Clave de ElevenLabs (opcional, voz más natural; Enter para saltear): "; read -rs EK; echo
+  if [ -n "$EK" ]; then mkdir -p "$(dirname "$KF")"; (umask 077; printf '%s' "$EK" > "$KF"); ok "Clave de ElevenLabs guardada en $KF"; else info "Sin ElevenLabs: se usa edge-tts (gratis)"; fi; fi
 info "Instalando dependencias de Node..."; (cd "$SK/engine" && npm ci --silent) && ok "Dependencias de Node"
 if [ -n "$1" ]; then unzip -o -q "$1" -d "$SK/assets/sfx" && ok "Efectos de sonido del zip"
 elif ls "$HOME/.claude/skills/edicion/assets/sfx"/*/*.wav >/dev/null 2>&1; then ok "Efectos de sonido: se usan los de la skill edicion"

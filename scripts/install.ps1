@@ -14,6 +14,10 @@ Info "Entorno de Python para la voz (edge-tts)..."
 $py = if (Has py) { "py" } else { "python" }
 if (-not (Test-Path "$SK\.venv\Scripts\python.exe")) { & $py -3 -m venv "$SK\.venv" }
 & "$SK\.venv\Scripts\python.exe" -m pip install -q --upgrade pip edge-tts; if ($?) { Ok "edge-tts" }
+$KF = "$HOME\.config\motion\elevenlabs_key"
+if ((Test-Path $KF) -and (Get-Item $KF).Length -gt 10) { Ok "Clave de ElevenLabs ya guardada" }
+else { $EK = Read-Host "Clave de ElevenLabs (opcional, voz más natural; Enter para saltear)"
+  if ($EK) { New-Item -ItemType Directory -Force (Split-Path $KF) | Out-Null; Set-Content -NoNewline -Path $KF -Value $EK; Ok "Clave de ElevenLabs guardada en $KF" } else { Info "Sin ElevenLabs: se usa edge-tts (gratis)" } }
 Info "Instalando dependencias de Node..."; Push-Location "$SK\engine"; npm ci --silent; Pop-Location; Ok "Dependencias de Node"
 if ($Zip) { Expand-Archive -Force $Zip "$SK\assets\sfx"; Ok "Efectos de sonido del zip" }
 elseif (Test-Path "$HOME\.claude\skills\edicion\assets\sfx\whoosh") { Ok "Efectos de sonido: se usan los de la skill edicion" }

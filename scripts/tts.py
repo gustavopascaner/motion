@@ -2,14 +2,16 @@
 """Locución del guion: genera la voz de cada beat, la une y guarda los tiempos de cada palabra.
 uso: $PY tts.py <work>                 lee <work>/script.json → <work>/voice.wav + <work>/words.json
      $PY tts.py voices [es-AR]         lista las voces de edge-tts de ese idioma
-     $PY tts.py voices eleven [acento] lista voces de ElevenLabs (necesita ELEVENLABS_API_KEY), ej. acento "argentine"
-     $PY tts.py sample <voz> "<texto>" <salida.mp3>   muestra corta para escuchar una voz
+     $PY tts.py voices eleven [acento] lista voces de ElevenLabs (tuyas + biblioteca; la clave necesita el permiso "Voices: read")
+     $PY tts.py samples <carpeta> "<frase>" <voz1> <voz2> …   una muestra por voz (edge o voice_id de ElevenLabs) para comparar
 
 script.json:
 { "voice": {"engine":"edge", "id":"es-AR-ElenaNeural", "rate":"+5%", "pitch":"+0Hz"},
   "lead": 0.35,                      ← segundos de imagen antes de que arranque la voz
   "beats": [ {"id":"b01", "text":"¿Sabés por qué…?", "say":"(opcional: texto para pronunciar)", "pause":0.25}, … ] }
-engine "eleven": {"engine":"eleven","id":"<voice_id>","model":"eleven_multilingual_v2","stability":0.45,"similarity":0.8,"style":0.25,"speed":1.05}
+engine "eleven": {"engine":"eleven","id":"<voice_id>","model":"eleven_multilingual_v2","stability":0.45,"similarity":0.8,"style":0.2,"speed":1.05}
+Clave de ElevenLabs: variable ELEVENLABS_API_KEY o el archivo ~/.config/motion/elevenlabs_key (fuera del repo).
+Con ElevenLabs cada beat se genera con el texto anterior y el siguiente como contexto, para que la entonación sea continua.
 Cada beat se cachea (solo se regenera lo que cambió). Voces argentinas de edge: es-AR-ElenaNeural (mujer) · es-AR-TomasNeural (hombre).
 """
 import os as _o,sys as _s,subprocess as _sp
@@ -34,14 +36,33 @@ def edge_tts(text,v,mp3):
             if k==2: raise SystemExit(f'edge-tts falló ({e}). ¿Hay internet?')
             time.sleep(2)
 
-def eleven(text,v,mp3):
-    key=os.environ.get('ELEVENLABS_API_KEY') or raise_('Falta ELEVENLABS_API_KEY')
-    body={'text':text,'model_id':v.get('model','eleven_multilingual_v2'),
-          'voice_settings':{'stability':v.get('stability',.45),'similarity_boost':v.get('similarity',.8),'style':v.get('style',.25),'use_speaker_boost':True,'speed':v.get('speed',1.0)}}
-    req=urllib.request.Request(f"https://api.elevenlabs.io/v1/text-to-speech/{v['id']}/with-timestamps?output_format=mp3_44100_128",
-        json.dumps(body).encode(),{'xi-api-key':key,'Content-Type':'application/json'})
-    d=json.loads(urllib.request.urlopen(req,timeout=120).read());open(mp3,'wb').write(base64.b64decode(d['audio_base64']))
-    al=d.get('normalized_alignment') or d['alignment'];ch,st,en=al['characters'],al['character_start_times_seconds'],al['character_end_times_seconds']
+KEYFILE=os.path.expanduser('~/.config/motion/elevenlabs_key')
+def eleven_key(required=True):
+    """Clave de ElevenLabs: variable ELEVENLABS_API_KEY o ~/.config/motion/elevenlabs_key (nunca dentro de la skill/repo)."""
+    k=os.environ.get('ELEVENLABS_API_KEY') or (open(KEYFILE).read().strip() if os.path.exists(KEYFILE) else '')
+    if not k and required: raise SystemExit(f'Falta la clave de ElevenLabs: pedírsela al usuario y guardarla en {KEYFILE} (chmod 600)')
+    return k
+def eleven_req(url,body=None,tries=4):
+    req=urllib.request.Request(url,json.dumps(body).encode() if body is not None else None,{'xi-api-key':eleven_key(),'Content-Type':'application/json'})
+    for k in range(tries):
+        try: return urllib.request.urlopen(req,timeout=120).read()
+        except urllib.error.HTTPError as e:
+            msg=e.read().decode('utf-8','replace')[:300]
+            if e.code==429 and k<tries-1: time.sleep(3*(k+1));continue
+            hint={401:'clave inválida o sin permiso para esta operación (ver "missing_permissions")',402:'sin créditos en la cuenta',404:'voz o modelo inexistente (revisar voice_id)',
+                  422:'parámetros inválidos'}.get(e.code,'')
+            if 'quota' in msg: hint='se terminaron los créditos del mes'
+            raise SystemExit(f'ElevenLabs {e.code}: {hint}\n{msg}')
+def eleven(text,v,mp3,prev=None,nxt=None):
+    model=v.get('model','eleven_multilingual_v2')
+    body={'text':text,'model_id':model,'language_code':v.get('lang','es'),
+          'voice_settings':{'stability':v.get('stability',.45),'similarity_boost':v.get('similarity',.8),'style':v.get('style',.2),'use_speaker_boost':True,'speed':v.get('speed',1.0)}}
+    if model!='eleven_v3':   # continuidad de entonación entre beats (v3 no lo admite)
+        if prev: body['previous_text']=prev
+        if nxt: body['next_text']=nxt
+    d=json.loads(eleven_req(f"https://api.elevenlabs.io/v1/text-to-speech/{v['id']}/with-timestamps?output_format=mp3_44100_128",body))
+    open(mp3,'wb').write(base64.b64decode(d['audio_base64']))
+    al=d.get('alignment') or d['normalized_alignment'];ch,st,en=al['characters'],al['character_start_times_seconds'],al['character_end_times_seconds']
     ws=[];cur=None
     for c,a,b in zip(ch,st,en):
         if c.isspace():
@@ -50,19 +71,21 @@ def eleven(text,v,mp3):
         if cur is None: cur={'w':'','s':a,'e':b}
         cur['w']+=c;cur['e']=b
     if cur: ws.append(cur)
-    for w in ws: w['w']=re.sub(r'^[^\w¿¡]+|[^\w%]+$','',w['w']) or w['w']
+    for w in ws: w['w']=re.sub(r'^[^\w]+|[^\w%]+$','',w['w']) or w['w']
     return [w for w in ws if re.search(r'\w',w['w'])]
 def raise_(m): raise SystemExit(m)
 
 def run(W):
     t0=time.time();S=json.load(open(os.path.join(W,'script.json')));v=S['voice'];lead=S.get('lead',.35)
     C=os.path.join(W,'voice','cache');os.makedirs(C,exist_ok=True)
-    parts=[];words=[];beats=[];cur=lead;gen=0
+    parts=[];words=[];beats=[];cur=lead;gen=0;SAY=[b.get('say') or b['text'] for b in S['beats']];EL=v.get('engine')=='eleven'
+    if EL: print(f"ElevenLabs · voz {v['id']} · {v.get('model','eleven_multilingual_v2')} · el guion completo son {sum(map(len,SAY))} caracteres (solo se cobran los beats que cambian)")
     for i,b in enumerate(S['beats']):
-        say=b.get('say') or b['text'];key=hashlib.sha1(json.dumps([v,say],sort_keys=True).encode()).hexdigest()[:16]
+        say=SAY[i];prev=SAY[i-1] if EL and i else None;nxt=SAY[i+1] if EL and i<len(SAY)-1 else None
+        key=hashlib.sha1(json.dumps([v,say,prev,nxt],sort_keys=True).encode()).hexdigest()[:16]
         mp3,wj=os.path.join(C,key+'.mp3'),os.path.join(C,key+'.json')
         if not(os.path.exists(mp3) and os.path.exists(wj)):
-            ws=(eleven if v.get('engine')=='eleven' else edge_tts)(say,v,mp3);json.dump(ws,open(wj,'w'),ensure_ascii=False);gen+=1
+            ws=eleven(say,v,mp3,prev,nxt) if EL else edge_tts(say,v,mp3);json.dump(ws,open(wj,'w'),ensure_ascii=False);gen+=1
         ws=json.load(open(wj))
         if not ws: raise SystemExit(f"{b['id']}: la voz no devolvió palabras")
         a=max(0,ws[0]['s']-.04);z=ws[-1]['e']+.12
@@ -87,23 +110,27 @@ def run(W):
 
 def voices(a):
     if a and a[0]=='eleven':
-        key=os.environ.get('ELEVENLABS_API_KEY') or raise_('Falta ELEVENLABS_API_KEY');acc=a[1] if len(a)>1 else 'argentine'
-        for u in ['https://api.elevenlabs.io/v1/voices',f'https://api.elevenlabs.io/v1/shared-voices?language=es&accent={acc}&page_size=30']:
-            d=json.loads(urllib.request.urlopen(urllib.request.Request(u,headers={'xi-api-key':key}),timeout=40).read())
+        acc=a[1] if len(a)>1 else 'argentine'
+        for u,tag in [('https://api.elevenlabs.io/v1/voices','tuya'),(f'https://api.elevenlabs.io/v1/shared-voices?language=es&accent={acc}&page_size=40','biblioteca')]:
+            d=json.loads(eleven_req(u))
             for x in d.get('voices',[]):
-                lab=x.get('labels') or {};print(f"{x['voice_id']}  {x['name'][:28]:28s} {x.get('gender') or lab.get('gender','')}  {x.get('accent') or lab.get('accent','')}  {'(biblioteca)' if 'shared' in u else '(tuyas)'}")
+                lab=x.get('labels') or {};desc=(x.get('description') or lab.get('description') or '')[:50]
+                print(f"{x['voice_id']}  {x['name'][:26]:26s} {(x.get('gender') or lab.get('gender') or ''):7s} {(x.get('accent') or lab.get('accent') or ''):12s} ({tag}{', pública: '+x['public_owner_id'] if x.get('public_owner_id') else ''})  {desc}")
         return
     import edge_tts
     loc=(a[0] if a else 'es-AR').lower()
     for x in asyncio.run(edge_tts.list_voices()):
         if x['Locale'].lower().startswith(loc): print(f"{x['ShortName']:28s} {x['Gender']}")
-def sample(vid,text,out):
-    v={'engine':'eleven','id':vid} if not re.match(r'^[a-z]{2}-[A-Z]{2}-',vid) else {'engine':'edge','id':vid,'rate':'+5%'}
-    (eleven if v['engine']=='eleven' else edge_tts)(text,v,out);print('✓',out)
+def samples(out,text,ids):
+    """Una muestra por voz (ids de edge como es-AR-ElenaNeural o voice_id de ElevenLabs) → <out>/NN_<voz>.mp3"""
+    os.makedirs(out,exist_ok=True)
+    for k,vid in enumerate(ids,1):
+        edge=bool(re.match(r'^[a-z]{2}-[A-Z]{2}-',vid));f=os.path.join(out,f"{k:02d}_{'edge' if edge else 'eleven'}_{re.sub(r'[^A-Za-z0-9-]','',vid)[:24]}.mp3")
+        edge_tts(text,{'id':vid,'rate':'+5%'},f) if edge else eleven(text,{'engine':'eleven','id':vid},f);print('✓',f)
 
 if __name__=='__main__':
     a=sys.argv[1:]
     if not a or a[0] in('-h','--help'): print(__doc__)
     elif a[0]=='voices': voices(a[1:])
-    elif a[0]=='sample': sample(a[1],a[2],a[3])
+    elif a[0]=='samples': samples(a[1],a[2],a[3:])
     else: run(a[0])
