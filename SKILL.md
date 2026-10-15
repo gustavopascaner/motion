@@ -1,6 +1,6 @@
 ---
 name: motion
-description: Produce un video de motion graphics de ~1 minuto a partir de un GUION (sin video de cámara) — escenas animadas con la marca del usuario (colores, tipografías, logo), locución con voz IA argentina (mujer u hombre, edge-tts gratis o ElevenLabs), subtítulos dinámicos, música de fondo de Envato con volumen automático y SFX sutiles; entrega un MP4 final + SRT. Al empezar pregunta voz, marca, formato y música. Usar cuando el usuario escribe /motion con un guion (texto o archivo), o pide "hacé un video de motion graphics con este guion", "convertí este guion en video", "video animado con voz en off".
+description: Produce un video de motion graphics (típicamente ~1 minuto; dura lo que dure el guion completo) a partir de un GUION (sin video de cámara) — escenas animadas con la marca del usuario (colores, tipografías, logo), locución con voz IA argentina (mujer u hombre, edge-tts gratis o ElevenLabs), subtítulos dinámicos, música de fondo de Envato con volumen automático y SFX sutiles; entrega un MP4 final + SRT. Al empezar pregunta voz, marca, formato y música. Usar cuando el usuario escribe /motion con un guion (texto o archivo), o pide "hacé un video de motion graphics con este guion", "convertí este guion en video", "video animado con voz en off".
 ---
 
 # /motion — guion → video de motion graphics con voz en off
@@ -45,18 +45,18 @@ Crear `$SK/brands/<slug>/brand.json` copiando `brands/editorial/brand.json` (en 
 
 ## 2 · Guion → beats → voz
 **El guion es del usuario: no reescribir el contenido.** Solo partirlo y ajustar la pronunciación.
-- Partir en **beats** (1 frase o idea, 2–6 s cada uno; 10–18 beats para 1 minuto). Cada beat suele ser una escena.
+- Partir en **beats** (1 frase o idea, 2–6 s cada uno; ≈10–18 beats por minuto). Cada beat suele ser una escena.
 - `say` (opcional) = cómo se pronuncia cuando el texto escrito confunde a la voz: números grandes ("70 %" → "setenta por ciento"), siglas ("OMS" → "o eme ese"), símbolos, años, abreviaturas. `text` queda como está escrito.
 - `pause` = silencio después del beat (default 0,38 s si termina en punto/pregunta, 0,18 s si no). Más pausa (0,6) antes de un remate o del CTA.
-- `<work>/script.json`: `{"voice":{"id":"mujer"},"lead":0.35,"target":60,"beats":[{"id":"b01","text":"…"},…]}` (o la voz guardada en la marca / elegida). Con ElevenLabs el ritmo se ajusta con `"speed"` (0.9–1.15) en vez de `"rate"`.
-- `$PY $SK/scripts/tts.py "<work>"` → `voice.wav` + `words.json` (tiempo de cada palabra) y la duración. Duración objetivo ≈ 60 s:
-  - más de 66 s → acelerar (`rate` hasta `+15%` en edge-tts, `speed` hasta `1.15` en ElevenLabs); si igual se pasa, **proponer recortes concretos al usuario y esperar respuesta**.
+- `<work>/script.json`: `{"voice":{"id":"mujer"},"lead":0.35,"beats":[{"id":"b01","text":"…"},…]}` (o la voz guardada en la marca / elegida). Con ElevenLabs el ritmo se ajusta con `"speed"` (0.9–1.15) en vez de `"rate"`.
+- `$PY $SK/scripts/tts.py "<work>"` → `voice.wav` + `words.json` (tiempo de cada palabra) y la duración. **Usar el guion completo, dure lo que dure**: no recortar ni acelerar la voz para llegar a 1 minuto (el ritmo natural de la voz se respeta).
+  - Solo si la voz supera los **2 minutos**, proponer recortes concretos al usuario y esperar su respuesta antes de seguir.
   - más corta → está bien, no estirar el guion (se puede bajar `rate` hasta `-5%` si suena apurada).
 - Escuchar mentalmente el ritmo: si un beat queda muy largo (> 7 s), partirlo. Solo se regeneran los beats que cambian (caché).
 
 ## 3 · Música
 - Si el usuario dio música: `"music": {"path": "/abs/tema.mp3", "offset": 0}`.
-- Si no, Envato (siempre instrumental): `$PY $SK/scripts/envato.py search "<work>" music "<estilo en inglés>" --mood <mood> --tempo "<tempo>" [--genre <género>]`. Elegir por tono y por el perfil de energía (parejo, sin caídas largas en el primer minuto) y `$PY $SK/scripts/envato.py use "<work>" music <búsqueda>#<n>`. Poner `offset` (segundo donde entra la parte con energía; mirar el perfil ▁▂▃█).
+- Si no, Envato (siempre instrumental): `$PY $SK/scripts/envato.py search "<work>" music "<estilo en inglés>" --mood <mood> --tempo "<tempo>" [--genre <género>]`. Elegir por tono y por el perfil de energía (parejo, sin caídas largas durante el largo del video; si la música es más corta que el video se repite sola) y `$PY $SK/scripts/envato.py use "<work>" music <búsqueda>#<n>`. Poner `offset` (segundo donde entra la parte con energía; mirar el perfil ▁▂▃█).
 - Niveles automáticos en mix.py: más fuerte antes de la voz (`intro` −8 dB), baja debajo de la voz (`bed` −21 dB), sube en la cola (`outro` −10 dB) y fade final. Ajustables en `config.music`.
 - La vista previa de Envato tiene marca de agua: en la entrega avisar que hay que licenciarla. Con navegador con sesión de Envato: pedir confirmación una vez, licenciar con el nombre del video y descargar en WAV; si no, darle el link al usuario. Luego `$PY $SK/scripts/envato.py collect "<work>"` y volver a correr **solo** `mix.py` (no hace falta re-renderizar).
 

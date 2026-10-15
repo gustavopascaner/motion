@@ -116,9 +116,8 @@ def run(W):
     total=round(cur,3);json.dump({'lead':lead,'voice_end':total,'beats':beats,'words':words},open(os.path.join(W,'words.json'),'w'),ensure_ascii=False,indent=1)
     nw=len(words);print(f'✓ voz: {total:.1f} s ({nw} palabras, {nw/max(.1,total-lead):.2f} pal/s) · {gen} beat(s) generados, {len(parts)-gen} de caché')
     for b in beats: print(f"  {b['id']}  {b['s']:6.2f}–{b['e']:6.2f}  {b['text'][:70]}")
-    tgt=S.get('target',60)
-    if total>tgt+6: print(f'⚠️  La voz dura {total:.0f} s (objetivo ≈{tgt} s). Acelerar ("rate" hasta +15% en edge, "speed" hasta 1.15 en ElevenLabs) o proponer recortes al usuario.')
-    elif total<tgt-15: print(f'ℹ️  La voz dura {total:.0f} s: más corta que el objetivo ({tgt} s). Está bien si el guion es corto; no estirar.')
+    # Se usa el guion completo: solo si pasa los 2 minutos hay que proponer recortes al usuario
+    if total>120: print(f'⚠️  La voz dura {total:.0f} s (más de 2 minutos): proponer recortes concretos al usuario y esperar su respuesta.')
     timing.log(W,'Locución',time.time()-t0)
 
 def voices(a):

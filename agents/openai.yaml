@@ -1,6 +1,6 @@
 interface:
   display_name: "Motion graphics desde un guion"
-  short_description: "Guion → video animado de 1 minuto con voz argentina, marca, música y subtítulos"
+  short_description: "Guion → video animado con voz argentina, marca, música y subtítulos"
   default_prompt: "Usá $motion para convertir este guion en un video de motion graphics con voz en off."
 
 policy:

@@ -1,4 +1,4 @@
-{"voice":{"engine":"edge","id":"es-AR-ElenaNeural","rate":"+6%"},"lead":0.35,"target":60,
+{"voice":{"engine":"edge","id":"es-AR-ElenaNeural","rate":"+6%"},"lead":0.35,
  "beats":[
  {"id":"b01","text":"¿Sabés por qué tus pacientes no vuelven?"},
  {"id":"b02","text":"No es el precio. Y tampoco es la competencia."},

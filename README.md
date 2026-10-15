@@ -1,6 +1,6 @@
 # motion — guion → video de motion graphics con voz en off
 
-Skill para **Claude Code** y **Codex** (macOS y Windows). Le das un **guion** y produce un video animado de ~1 minuto, listo para publicar:
+Skill para **Claude Code** y **Codex** (macOS y Windows). Le das un **guion** y produce un video animado con el guion completo (típicamente ~1 minuto; solo propone recortes si pasa los 2 minutos), listo para publicar:
 
 - **Preguntas al empezar**: voz (mujer/hombre, **argentina por defecto**), marca, formato (9:16, 1:1, 4:5, 16:9) y música. Si la marca es nueva, pregunta logo, colores y tipografías, muestra una vista previa y la **guarda** para los próximos videos.
 - **Locución IA** con tiempos por palabra: ElevenLabs (más natural, voces rioplatenses o tu voz clonada; con tu clave) o edge-tts gratis (`es-AR-ElenaNeural` / `es-AR-TomasNeural`, y otros acentos). La voz elegida queda guardada en la marca.
