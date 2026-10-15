@@ -1,6 +1,6 @@
 ---
 name: motion
-description: Produce un video de motion graphics (típicamente ~1 minuto; dura lo que dure el guion completo) a partir de un GUION (sin video de cámara) — escenas animadas con la marca del usuario (colores, tipografías, logo), locución con voz IA argentina (mujer u hombre, edge-tts gratis o ElevenLabs), subtítulos dinámicos, música de fondo de Envato con volumen automático y SFX sutiles; entrega un MP4 final + SRT. Al empezar pregunta voz, marca, formato y música. Usar cuando el usuario escribe /motion con un guion (texto o archivo), o pide "hacé un video de motion graphics con este guion", "convertí este guion en video", "video animado con voz en off".
+description: Produce un video de motion graphics (típicamente ~1 minuto; dura lo que dure el guion completo) a partir de un GUION (sin video de cámara) — escenas animadas con la marca del usuario (colores, tipografías, logo), locución con voz IA argentina (mujer u hombre, edge-tts gratis o ElevenLabs), subtítulos dinámicos, música de fondo de Envato con volumen automático y SFX sutiles; entrega un MP4 final + SRT. Al empezar pregunta voz, marca y música (formato siempre 9:16 salvo que se pida otro). Usar cuando el usuario escribe /motion con un guion (texto o archivo), o pide "hacé un video de motion graphics con este guion", "convertí este guion en video", "video animado con voz en off".
 ---
 
 # /motion — guion → video de motion graphics con voz en off
@@ -16,14 +16,14 @@ Si `doctor.py` marca algo con ✗: `bash $SK/scripts/install.sh` (Windows: `powe
 
 ## 0 · Preguntas iniciales (SIEMPRE, antes de producir)
 Leer primero el guion y `$PY $SK/scripts/brand.py list` (marcas guardadas). Después preguntar **todo junto en una sola tanda** (en Claude Code con la herramienta AskUserQuestion; en Codex u otros, un solo mensaje numerado). No preguntar lo que el usuario ya dijo.
+**Formato: NO preguntarlo.** Siempre vertical **9:16** (`"format": "9:16"`), salvo que el usuario pida otro (1:1, 4:5 o 16:9).
 1. **Voz** — si la marca elegida tiene `voice` guardada, ofrecer primero *La de la marca (<nombre>)*. Si no: *Mujer* o *Hombre*, por defecto **argentina**.
    - **Voces por defecto** (elección del usuario): mujer → **Agustina** (ElevenLabs `TZvhlMgMw2P4gPSuD8v7`), hombre → **Manuel** (ElevenLabs `L7pBVwjueW3IPcQt4Ej9`). En `script.json` alcanza con `"voice": {"id":"mujer"}` o `{"id":"hombre"}`: tts.py usa ElevenLabs si hay clave y, si no, Elena / Tomás de edge-tts (gratis); en ese caso mencionar una vez que con una clave de ElevenLabs suena más natural. Ofrecer otras voces solo si el usuario lo pide.
    - Elegir voz de ElevenLabs: `tts.py voices eleven argentine` (voces propias, incluida una voz clonada del usuario, y biblioteca rioplatense), generar 3–4 muestras con `tts.py samples "<work>/muestras_voz" "<primera frase del guion>" <id1> <id2> …`, dárselas al usuario para escuchar y usar la que elija. Guardarla en la marca (`brand.json` → `"voice": {"engine":"eleven","id":"…","name":"…"}`) para no volver a preguntar.
    - Otro acento: la voz de ese país (`tts.py voices es` lista las de edge: es-UY, es-MX, es-ES, es-CL, es-CO…; en ElevenLabs, `voices eleven <acento>`).
    - **Clave de ElevenLabs**: nunca va en el repo ni en la skill. Si el usuario quiere ElevenLabs y no hay clave, pedirle que la cree (elevenlabs.io → Developers → API Keys, con permisos *Text to Speech*, *Voices: Read* y *Sound Effects*) y la guarde él mismo con `mkdir -p ~/.config/motion && printf '%s' 'CLAVE' > ~/.config/motion/elevenlabs_key && chmod 600 ~/.config/motion/elevenlabs_key`; si la pega en el chat, guardarla así y sugerir rotarla después.
 2. **Marca** — una de las guardadas (mostrarlas por nombre) o *Marca nueva*.
-3. **Formato** — *Vertical 9:16* (Reels/TikTok/Shorts, por defecto) · *Cuadrado 1:1* · *4:5* (feed) · *Horizontal 16:9* (YouTube).
-4. **Música** — *Enérgica* (Upbeat 110–140 BPM) · *Cálida/inspiradora* (Medium 90–110) · *Corporativa/tranquila* · *Tengo mi música* (pedir la ruta).
+3. **Música** — *Enérgica* (Upbeat 110–140 BPM) · *Cálida/inspiradora* (Medium 90–110) · *Corporativa/tranquila* · *Tengo mi música* (pedir la ruta).
 
 **Si es marca nueva**, segunda tanda (también todo junto):
 - **Nombre de la marca y logo** (ruta a PNG/SVG, o "sin logo") y usuario de redes (ej. `@consultorio`). Si da logo: `$PY $SK/scripts/brand.py colors <logo>` y proponer la paleta a partir de esos colores.
