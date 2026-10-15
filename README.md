@@ -8,7 +8,8 @@ Skill para **Claude Code** y **Codex** (macOS y Windows). Le das un **guion** y 
 - **Subtítulos dinámicos** con la palabra activa resaltada (y `.srt` aparte).
 - **Música de Envato** con volumen automático (fuerte al inicio, baja bajo la voz, sube al cierre) y **SFX sutiles** (usa la librería de la skill [edicion](https://github.com/gustavopascaner/edicion)).
 - **Dirección**: avisa si el ritmo, la variedad o el gancho no están bien, y arma hojas de prueba antes del render.
-- Entrega `NOMBRE.mp4` (H.264/AAC, −14 LUFS), `NOMBRE.srt`, la voz y la música por separado, y un `LEEME.md`.
+- Entrega `NOMBRE.mp4` (H.264/AAC, −14 LUFS), `NOMBRE.srt` y un `LEEME.md`.
+- **Proyecto editable para Premiere** (`NOMBRE_premiere.xml`): cada escena es un clip, los subtítulos y el logo van en pistas con alfa, la voz va frase por frase, y la música (con su curva de volumen) y los SFX en pistas propias. Para cambiar el texto de un gráfico se le pide a Claude y se re-renderiza solo esa escena.
 
 Las instrucciones para el agente están en [`SKILL.md`](SKILL.md).
 
@@ -44,6 +45,7 @@ Opcional: `ELEVENLABS_API_KEY` para voces de ElevenLabs.
 | `scripts/tts.py` | Locución por beats con caché y tiempos por palabra |
 | `scripts/render.js` | Storyboard → línea de tiempo, subtítulos, SFX, avisos de dirección, render en paralelo con Chrome |
 | `scripts/mix.py` | Voz + música + SFX → MP4 final y SRT |
+| `scripts/build_xml.py` | Proyecto XML para Premiere con todas las capas enlazadas |
 | `scripts/brand.py` | Marcas: Google Fonts, colores desde el logo, contraste |
 | `scripts/envato.py` | Búsqueda de música en Envato y reemplazo por la licenciada |
 | `engine/engine.html` | Motor de escenas (HTML/CSS/JS) |

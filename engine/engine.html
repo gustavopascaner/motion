@@ -291,14 +291,20 @@ async function init(cfg){CFG=cfg;BR=cfg.brand;W=cfg.W;H=cfg.H;TOTAL=cfg.total;U=
  if((BR.style||{}).progress){progEl=h('div','',S);progEl.id='prog';progEl.style.height=Math.max(4,Math.round(8*U))+'px';}
  CAPS=cfg.caps||[];return SCN.map(s=>({i:s.i,type:s.type,scale:+s.scale.toFixed(2)}));}
 let curCap=-1;
-function frame(T){FRAME=Math.round(T*(CFG.fps||30));let top=null;
- SCN.forEach((sc,i)=>{const nx=SCN[i+1];const vis=T>=sc.s&&(!nx||T<nx.s+(TRD[nx.tr]||0)+.02)&&(nx||T<=sc.e+5);
+// opt: sin nada = cuadro completo (MP4) · {layer:'scenes'} = solo escenas (opaco) · {layer:'caps'} = solo subtítulos · {layer:'overlay'} = logo/progreso
+// caps y overlay salen con fondo transparente (capas con alfa para Premiere).
+function frame(T,opt){FRAME=Math.round(T*(CFG.fps||30));opt=opt||{};const lay=opt.layer,alpha=lay==='caps'||lay==='overlay';
+ S.style.background=document.body.style.background=document.documentElement.style.background=alpha?'transparent':'';
+ let top=null;SCN.forEach(sc=>{if(T>=sc.s)top=sc;});
+ SCN.forEach((sc,i)=>{const nx=SCN[i+1];let vis=T>=sc.s&&(!nx||T<nx.s+(TRD[nx.tr]||0)+.02)&&(nx||T<=sc.e+5);
+  if(alpha)vis=false;
   sc.root.style.display=vis?'block':'none';if(!vis)return;const t=T-sc.s;
   sc.inner.style.transform='';sc.inner.style.clipPath='';if(sc.veil)sc.veil.style.clipPath='';sc.cam.style.translate='';sc.inner.style.opacity='';
   trIn(sc,t);if(nx&&T>=nx.s)trOut(sc,nx,T-nx.s);
-  sc.cam.style.scale=String(1+.035*E.io(P(t,0,Math.max(sc.D,1))));sc.dec(T,t);sc.upd(t);top=sc;});
- // subtítulos: ocultos si la escena visible (la de arriba) los tiene desactivados
- const show=top&&top.cap&&(T-top.s)>(TRD[top.tr]||0)*.6;const k=show?CAPS.findIndex(g=>T>=g.s&&T<g.e):-1;
+  sc.cam.style.scale=String(1+.035*E.io(P(t,0,Math.max(sc.D,1))));sc.dec(T,t);sc.upd(t);});
+ // subtítulos: ocultos si la escena de arriba los tiene desactivados
+ const capsOn=!lay||opt.layer==='caps';
+ const show=capsOn&&top&&top.cap&&(T-top.s)>(TRD[top.tr]||0)*.6;const k=show?CAPS.findIndex(g=>T>=g.s&&T<g.e):-1;
  if(k!==curCap){curCap=k;capEl.innerHTML='';if(k>=0)CAPS[k].words.forEach((w,i)=>{if(i)capEl.appendChild(document.createTextNode(' '));h('span','',capEl,w.w);});}
  if(k>=0){const g=CAPS[k],th=top.th;applyTheme(capEl,th);capEl.style.top=(top.area.capY-capEl.offsetHeight/2)+'px';
   const x=E.back(P(T,g.s,.18));capEl.style.transform=`scale(${L(.88,1,x)})`;capEl.style.opacity=P(T,g.s,.06);
@@ -306,6 +312,8 @@ function frame(T){FRAME=Math.round(T*(CFG.fps||30));let top=null;
    sp.style.color=on||w.k?'var(--hl)':'var(--fg)';sp.style.transform=on?'scale(1.06)':'none';
    sp.style.textShadow=th.dark||top.type==='image'?'0 4px 22px rgba(0,0,0,.55)':'none';});}
  else capEl.style.opacity=0;
- if(logoEl)logoEl.style.opacity=!top?0:top.type==='cta'||top.p.logo===false?1-P(T-top.s,0,.3):P(T,.3,.3);
- if(progEl)progEl.style.width=(T/TOTAL*W)+'px';}
+ const ovOn=!lay||opt.layer==='overlay';
+ if(logoEl)logoEl.style.opacity=!ovOn||!top?0:top.type==='cta'||top.p.logo===false?1-P(T-top.s,0,.3):P(T,.3,.3);
+ if(progEl){progEl.style.display=ovOn?'block':'none';progEl.style.width=(T/TOTAL*W)+'px';}}
+const HAS_OVERLAY=()=>!!(logoEl||progEl);
 </script></body></html>

@@ -6,7 +6,7 @@ description: Produce un video de motion graphics de ~1 minuto a partir de un GUI
 # /motion — guion → video de motion graphics con voz en off
 
 Entrada: un **guion** (texto pegado o archivo .txt/.md/.docx). No hay video de cámara: todo son escenas animadas a pantalla completa.
-Salida: `<carpeta>/<NAME>_MOTION/` con `<NAME>.mp4` (H.264 + AAC, −14 LUFS), `<NAME>.srt`, `Assets/{voz.wav,musica.*}`, `LEEME.md` y `.work/` (persistente, permite hacer v2).
+Salida: `<carpeta>/<NAME>_MOTION/` con `<NAME>.mp4` (H.264 + AAC, −14 LUFS), `<NAME>.srt`, **`<NAME>_premiere.xml` (proyecto editable)**, `Assets/{Escenas,Subtitulos,Overlay,Voz,Musica,SFX}`, `LEEME.md` y `.work/` (persistente, permite hacer v2).
 Hablarle al usuario en español rioplatense (voseo). Avisar el avance entre pasos largos.
 
 Rutas: `SK` = carpeta de esta skill (Claude Code: `~/.claude/skills/motion`; Codex: `~/.codex/skills/motion`).
@@ -77,17 +77,20 @@ Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S
 2. `node $SK/scripts/render.js "<work>" --test --at=0.3,mid,end` → `<work>/sheet.jpg` (3 cuadros por escena: entrando, a la mitad, armada). **Mirar la hoja** y corregir: textos que se achican de más (aviso "se achicó al N %"), cortes, superposiciones con los subtítulos, colores con poco contraste, escenas vacías a la mitad (el contenido tiene que aparecer rápido).
 3. Render final (en segundo plano, ~1 min por minuto de video): `node $SK/scripts/render.js "<work>"` → `<work>/video.mp4`.
 4. `$PY $SK/scripts/mix.py "<work>"` → `<NAME>.mp4` + `<NAME>.srt` en `out_dir`.
-5. Mirar 3–4 cuadros del MP4 final (`ffmpeg -ss <t> -i <mp4> -frames:v 1 x.jpg`) para confirmar.
+5. **Proyecto para Premiere** (por defecto siempre; saltear solo si `config.premiere` es `false`): `node $SK/scripts/render.js "<work>" --premiere` (en segundo plano, ~2–3 min) y `$PY $SK/scripts/build_xml.py "<work>"`. Pistas: V1 escenas (una por clip, con la transición de entrada ya compuesta) · V2 subtítulos con alfa · V3 logo · A1 voz (una frase por clip) · A2 música con keyframes de volumen · A3+ SFX. Marcadores por escena.
+6. Mirar 3–4 cuadros del MP4 final (`ffmpeg -ss <t> -i <mp4> -frames:v 1 x.jpg`) para confirmar.
 
 ## 6 · Entrega
 - `$PY $SK/scripts/timing.py report "<work>"`.
-- `LEEME.md` en `out_dir`: voz usada, marca, formato, duración, estructura (tabla escena → texto → tiempo), música (con `envato.py report` y si falta licenciar), SFX, tiempo de procesamiento, cómo pedir cambios.
-- Responder corto: ruta del MP4, duración, voz y música elegidas (avisar si la música es vista previa sin licenciar), escenas destacadas, tiempo total.
+- `LEEME.md` en `out_dir`: **cómo abrirlo en Premiere** (Archivo → Importar → `<NAME>_premiere.xml`; no mover ni renombrar la carpeta; tabla de pistas; qué se edita ahí — cortar/mover/borrar escenas, re-timear frases de la voz, cambiar música y volúmenes, sacar SFX, usar el `.srt` como subtítulos nativos — y qué no: el texto dentro de cada gráfico, que se cambia pidiéndoselo a Claude), voz usada, marca, formato, duración, estructura (tabla escena → texto → tiempo), música (con `envato.py report` y si falta licenciar), SFX, tiempo de procesamiento, cómo pedir cambios.
+- Responder corto: ruta del MP4 y del XML, duración, voz y música elegidas (avisar si la música es vista previa sin licenciar), escenas destacadas, tiempo total.
 
 ## Versiones (v2, ajustes)
-Reusar `.work`: cambiar `script.json` (voz/texto: solo se regeneran los beats tocados) y/o `story.js`, apuntar `out_dir` a `<NAME>_MOTION_v2` y repetir desde el paso que corresponda (cambio de música o volumen → solo `mix.py`; cambio visual → render + mix; cambio de texto → tts + render + mix). Escenas nuevas: agregarlas a `engine/engine.html` siguiendo `escenas.md`.
+Reusar `.work`: cambiar `script.json` (voz/texto: solo se regeneran los beats tocados) y/o `story.js`, apuntar `out_dir` a `<NAME>_MOTION_v2` y repetir desde el paso que corresponda (cambio de música o volumen → solo `mix.py` + `build_xml.py`; cambio visual → render + mix + `render.js --premiere --only=<n.º de escena>` + `build_xml.py`; cambio de texto → tts + todo).
+**Cambiar un texto de un gráfico ya importado en Premiere**: editar story.js y correr `render.js --premiere --only=N` (re-renderiza solo esa escena con el **mismo nombre de archivo**), el MP4 si se quiere, y avisar al usuario que en Premiere haga clic derecho en el clip → *Reemplazar/Vincular medios* (o cierre y reabra el proyecto) para ver el cambio. Si cambia la duración de la escena, regenerar el XML y reimportar. Escenas nuevas: agregarlas a `engine/engine.html` siguiendo `escenas.md`.
 
 ## Notas técnicas
+- Capas para Premiere: escenas en ProRes 422 HQ (opacas); subtítulos y logo en ProRes 4444 con alfa. El audio en Premiere queda ~2 dB más bajo que el MP4 (el MP4 lleva una normalización final a −14 LUFS).
 - Motor: `engine/engine.html` renderizado cuadro a cuadro con Chrome (puppeteer-core) en paralelo, H.264 yuv420p. Todas las escenas son funciones puras del tiempo.
 - El contenido de cada escena se escala solo para entrar en el área segura (por formato) sin desbordar; si se achica mucho, avisa.
 - SFX: usa la librería de la skill `edicion` si está instalada (o `assets/sfx` propia con el mismo `catalog.json`); si no hay sonidos, sigue sin ellos.
