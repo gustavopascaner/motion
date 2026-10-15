@@ -2,14 +2,14 @@
  "target_lufs": -16.0,
  "categories": {
   "whoosh": {
-   "gain": 0.22,
+   "gain": 0.15,
    "auto": true,
-   "desc": "Transiciones: entrada de pantallas completas, wipes, cambios de tarjeta. Se alternan."
+   "desc": "Transiciones suaves (se filtran los graves al usarlas). Se alternan."
   },
   "build": {
    "gain": 0.25,
    "auto": true,
-   "desc": "Crece hasta el evento (reverse-whoosh antes de un corte; riser antes de un gran remate)."
+   "desc": "Whoosh invertido que crece hasta el corte (suavizado, sin golpe)."
   },
   "zoom": {
    "gain": 0.2,
@@ -35,11 +35,6 @@
    "gain": 0.22,
    "auto": true,
    "desc": "Elementos que rebotan, tono de humor."
-  },
-  "hit": {
-   "gain": 0.3,
-   "auto": true,
-   "desc": "Remates fuertes, sellos, pantallas completas de impacto. bass-drop solo para el remate más fuerte."
   },
   "ding": {
    "gain": 0.2,
@@ -110,18 +105,6 @@
    "tp": -2.5,
    "desc": "Whoosh invertido que crece hasta el corte (entra antes del evento)",
    "source": "Subtle Reverse Whoosh 5.wav"
-  },
-  "riser": {
-   "cat": "build",
-   "file": "build/riser.wav",
-   "dur": 6.744,
-   "anchor": 6.078,
-   "anchor_mode": "peak",
-   "lufs": -16.0,
-   "tp": -5.2,
-   "desc": "Riser cinematográfico de ~6 s que explota en el evento. No entra en la rotación de \"build\": pedirlo por id.",
-   "source": "Cinematic Riser.wav",
-   "rotate": false
   },
   "car-ignition": {
    "cat": "car",
@@ -333,29 +316,6 @@
    "tp": -4.7,
    "desc": "Glitch que desaparece",
    "source": "Glitch Disappears.wav"
-  },
-  "bass-drop": {
-   "cat": "hit",
-   "file": "hit/bass-drop.wav",
-   "dur": 4.664,
-   "anchor": 0.542,
-   "anchor_mode": "peak",
-   "lufs": -16.0,
-   "tp": -7.9,
-   "desc": "Golpe cinematográfico con caída de graves (remate muy fuerte). No entra en la rotación de \"hit\": pedirlo por id.",
-   "source": "OhmLab_Cinematic-Hit-Dramatic-Bass-Drop.wav",
-   "rotate": false
-  },
-  "hit-1": {
-   "cat": "hit",
-   "file": "hit/hit-1.wav",
-   "dur": 4.0,
-   "anchor": 0.024,
-   "anchor_mode": "peak",
-   "lufs": -16.0,
-   "tp": -1.9,
-   "desc": "Golpe con cola, remate",
-   "source": "Mountain Audio - Hit.wav"
   },
   "poof-1": {
    "cat": "poof",

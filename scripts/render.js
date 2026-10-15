@@ -67,23 +67,28 @@ function build(WD){
   const LSD=path.join(os.homedir(),'.config','motion','sfx'),LC=path.join(LSD,'catalog.json');
   if(fs.existsSync(LC)){const l=JSON.parse(fs.readFileSync(LC,'utf8'));Object.assign(CAT.categories,l.categories||{});
     for(const [k,v] of Object.entries(l.sounds||{}))CAT.sounds[k]={...v,root:LSD};}
-  const AUTO={bigword:p=>[['hit',p.at??.2,10]],stat:p=>[['ding',p.countEnd??((p.at??.25)+1.2),7]],donut:p=>[['ding',(p.at??.3)+1.3,6]],
+  const AUTO={bigword:()=>[],   // sin golpes ('boom'): la palabra gigante entra solo con su transición suave
+    stat:p=>[['ding',p.countEnd??((p.at??.25)+1.2),7]],donut:p=>[['ding',(p.at??.3)+1.3,6]],
     cta:p=>p.action==='comment'?[['click',(p.btnAt??1.4)+.75,8]]:[['click',p.btnAt??1.4,8]],question:()=>[['pop',.1,4]],
     list:p=>p.items.map((it,k)=>[it.mark==='x'?'error':it.mark==='check'?'ding':'pop',it.at??(.4+k*.3),2]),icons:p=>p.items.map((it,k)=>['pop',it.at??(.35+k*.25),2]),
     steps:p=>p.items.map((it,k)=>['pop',it.at??(.4+k*.4),2]),phone:p=>(p.msgs||[]).map((m,k)=>['pop',m.at??(.4+k*.7),3])};
   const ev=sounds.map(e=>e.t&&e.t.__w?{...e,t:findW(e.t,0)}:e);
   for(const x of sc){const p=x.p;if(p.sfx===null)continue;
     if(p.sfx){(Array.isArray(p.sfx)?p.sfx:[p.sfx]).forEach(q=>{const [spec,at=0,o={}]=Array.isArray(q)?q:[q];ev.push({spec,t:x.s+at,o,manual:true});});continue;}
-    if(x.tr!=='cut'||x.i===0)ev.push({spec:'whoosh',t:x.s+(x.i===0?0:.05),o:{},score:x.i===0?9:5});
+    if(x.tr!=='cut'||x.i===0)ev.push({spec:'whoosh',t:x.s+(x.i===0?0:.05),o:{},score:x.i===0?9:x.type==='bigword'?8:5});
     for(const [spec,at,score] of (AUTO[x.type]||(()=>[]))(p))if(at<x.e-x.s)ev.push({spec,t:x.s+at,o:{},score});}
   const MAX=cfg.sfx_max??6,SEP=Math.max(3,Math.min(6,total/(MAX*1.6)));const kept=ev.filter(e=>e.manual);
   for(const e of ev.filter(e=>!e.manual).sort((a,b)=>b.score-a.score||a.t-b.t)){if(kept.length>=MAX)break;if(kept.some(k=>Math.abs(k.t-e.t)<SEP))continue;kept.push(e);}
-  const rot={};let lastId=null;const sfx=[],missing=new Set();
+  const rot={};let lastId=null;const sfx=[],missing=new Set(),SOFT=new Set(['whoosh','build','zoom']);
   for(const e of kept.sort((a,b)=>a.t-b.t)){
     let id=e.spec;const all=Object.keys(CAT.sounds).filter(k=>CAT.sounds[k].cat===e.spec&&CAT.sounds[k].rotate!==false);
     if(all.length){let k=(rot[e.spec]=(rot[e.spec]??-1)+1)%all.length;if(all.length>1&&all[k]===lastId)k=(k+1)%all.length;id=all[k];}
     const m=CAT.sounds[id];if(!m){console.warn(`⚠️  SFX "${e.spec}" no existe en el catálogo`);continue;}lastId=id;
-    const file=path.join(m.root||SD,m.file);if(!fs.existsSync(file)){missing.add(id);continue;}
+    let file=path.join(m.root||SD,m.file);if(!fs.existsSync(file)){missing.add(id);continue;}
+    if(SOFT.has(m.cat)){   // transiciones suaves: sin graves ni golpe de ataque (versión filtrada, en caché del work)
+      const out=path.join(WD,'sfx_soft',id+'.wav');fs.mkdirSync(path.dirname(out),{recursive:true});
+      if(!fs.existsSync(out))spawnSync('ffmpeg',['-v','error','-y','-i',file,'-af','highpass=f=220:poles=2,highpass=f=220:poles=2,lowpass=f=9000,afade=t=in:d=0.08',out]);
+      if(fs.existsSync(out))file=out;}
     let start=e.t-m.anchor,sin=0;if(start<0){sin=-start;start=0;}
     sfx.push({id,file,start:+start.toFixed(3),sin:+sin.toFixed(3),dur:+Math.min(e.o.dur||m.dur,m.dur-sin).toFixed(3),gain:+(e.o.gain??CAT.categories[m.cat].gain*(m.gain_adj||1)).toFixed(3),at:+e.t.toFixed(3),auto:!e.manual});}
   if(missing.size)console.warn('⚠️  Faltan sonidos de la librería (se omiten):',[...missing].join(', '));

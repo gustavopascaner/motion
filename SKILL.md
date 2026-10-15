@@ -78,7 +78,8 @@ Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S
 - Textos cortos: títulos de 1–3 palabras por línea, ítems de ≤ 6 palabras.
 
 ## 4b · Diseño sonoro (biblioteca + ElevenLabs)
-- **Genéricos, automáticos** (biblioteca): whoosh en transiciones, hit en `bigword`, ding al terminar un conteo, pop/ding en ítems, click en el CTA. Se eligen solos los más importantes y separados; en total como máximo `config.sfx_max` (6) contando los manuales.
+- **Genéricos, automáticos** (biblioteca): whoosh **suave** en transiciones (se le filtran los graves y el ataque), ding al terminar un conteo, pop/ding en ítems, click en el CTA.
+- **Prohibido usar golpes graves ('boom')**: nada de hits, bass drops, risers que explotan, impactos ni sonidos con mucho grave como remate. El usuario quiere transiciones suaves. Tampoco generarlos con ElevenLabs (al generar transiciones pedir *soft, airy, no bass, no impact*). Se eligen solos los más importantes y separados; en total como máximo `config.sfx_max` (6) contando los manuales.
 - **Literales, a propósito**: 1–2 por video cuando algo que se ve o se dice tiene un sonido propio (llega un mensaje, latido, tipeo, alarma, caja registradora, puerta, aplauso…). Nunca para decorar.
   1. Buscar si ya existe: `$PY $SK/scripts/sfx.py list <palabra>` (biblioteca y generados).
   2. Si no existe y hay clave de ElevenLabs: `$PY $SK/scripts/sfx.py gen "<descripción concreta en inglés>" --id <id-en-español> --cat <categoría> --dur <0.5–3> [--anchor peak]` (anchor `peak` para golpes/latidos, `onset` —default— para lo que arranca en el evento). Se genera **una sola vez** (gasta créditos) y queda en la biblioteca local `~/.config/motion/sfx` para todos los videos; si el id existe, se reusa gratis. Sin clave: usar solo la biblioteca.
