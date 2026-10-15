@@ -240,7 +240,7 @@ SC.cta=(p,c)=>{const b=c.box;b.style.textAlign='center';b.style.alignItems='cent
  const lg=BR.logoURL&&p.logo!==false?h('img','height:'+(p.logoSize||200)+'px;max-width:80%;object-fit:contain;margin-bottom:40px',b):null;if(lg)lg.src=BR.logoURL;
  const k=p.kick?kick(b,p.kick):null;
  const ls=(p.lines||['SEGUIME']).map((s,i)=>ml(b,s,`font-size:${p.size||160}px;margin-top:${i?0:26}px`,'disp nw'));
- const hd=(p.handle??BR.handle)?h('div','font-size:40px;margin-top:30px',b,p.handle??BR.handle,'mono sub'):null;
+ const hd=p.handle?h('div','font-size:40px;margin-top:30px',b,p.handle,'mono sub'):null;   // usuario de redes: SOLO si se pide explícitamente (nunca el de la marca por defecto)
  const act=p.action||'follow',a=p.btnAt??1.4;let upd=()=>{};
  if(act==='comment'){const bx=h('div','margin-top:56px;width:820px;max-width:100%;display:flex;align-items:center;gap:20px;padding:26px 34px;border-radius:999px;background:color-mix(in srgb,var(--fg) 10%,transparent);text-align:left',b);
   const tx=h('div','flex:1;font-size:50px',bx,'','body');const snd=h('div','width:84px;height:84px;border-radius:50%;background:var(--hl);color:var(--hlfg);display:flex;align-items:center;justify-content:center',bx,icon('send',2.6),'ic');

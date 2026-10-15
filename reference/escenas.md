@@ -22,7 +22,7 @@ Clases dentro de textos: `H('x')` caja resaltada · `A('x')` color de acento · 
 | `quote` | `text?, author, authorAt, font:'display'?, size=104` | cita o frase de alguien; se ilumina palabra por palabra |
 | `phone` | `kick, name, msgs:[{t, at, me}]` | chat/mensajes (con "escribiendo…" antes de cada respuesta) |
 | `image` | `src (ruta), kb:[100,112], origin, kick, lines, at` | foto a pantalla completa con Ken Burns y título |
-| `cta` | `kick, lines, handle, action:'follow'\|'comment'\|'save'\|'link'\|'dm', btnAt, word (comment), btn, done, logo:false` | cierre: logo + llamado + botón que se aprieta |
+| `cta` | `kick, lines, handle (solo si el usuario lo pide explícitamente; nunca inventarlo ni sacarlo de la marca), action:'follow'\|'comment'\|'save'\|'link'\|'dm', btnAt, word (comment), btn, done, logo:false` | cierre: logo + llamado + botón que se aprieta |
 
 Íconos (`mark`, `icon`): user, users, heart, clock, chat, star, chart, trend, phone, calendar, money, check, x, bolt, search, target, lock, idea, home, mail, play, shield, rocket, gift, pin, camera, med, eye, globe, smile, alert, bookmark, send, arrow, plus.
 

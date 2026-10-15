@@ -26,7 +26,7 @@ Leer primero el guion y `$PY $SK/scripts/brand.py list` (marcas guardadas). Desp
 2. **Marca** — una de las guardadas (mostrarlas por nombre) o *Marca nueva*.
 
 **Si es marca nueva**, segunda tanda (también todo junto):
-- **Nombre de la marca y logo** (ruta a PNG/SVG, o "sin logo") y usuario de redes (ej. `@consultorio`). Si da logo: `$PY $SK/scripts/brand.py colors <logo>` y proponer la paleta a partir de esos colores.
+- **Nombre de la marca y logo** (ruta a PNG/SVG, o "sin logo"). **No preguntar ni guardar usuario de redes.** Si da logo: `$PY $SK/scripts/brand.py colors <logo>` y proponer la paleta a partir de esos colores.
 - **Colores** — opciones: *Sacarlos del logo* · *Negro + naranja* (editorial) · *Azul profundo + celeste* (salud/confianza) · *Verde + crema* (bienestar); o hex propios. Se necesitan 4: `dark` (fondo oscuro), `light` (fondo claro), `accent` (resaltado principal), `accent2` (secundario, opcional).
 - **Tipografías** — `brand.py fonts` lista combinaciones: *Editorial condensada* · *Moderna geométrica* · *Impacto* · *Elegante* (o cualquier familia de Google Fonts por nombre).
 - **Estilo** — subtítulos sí/no (por defecto sí), decorado de fondo: *grano + grilla + manchas de color* (default) · *anillos* · *puntos* · *limpio*.
@@ -75,6 +75,7 @@ Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S
 - **Mostrar, no repetir**: el texto en pantalla son palabras clave, datos y estructura, no la frase entera (salvo `kinetic`/`quote`, que muestran la frase mientras se dice y apagan los subtítulos).
 - Datos → `stat`/`bars`/`donut`. Enumeraciones → `list`/`steps`/`icons`. Contrastes (mito/realidad, antes/después) → `compare`. Preguntas → `question`. Conversaciones/mensajes → `phone`. Remates → `bigword`. Fotos del usuario → `image`.
 - **Cierre con `cta`** (seguir / comentar una palabra / guardar / link) sincronizado con lo que dice el guion.
+- **Nunca poner un usuario de redes (@…) en la placa final ni en ninguna escena**, salvo que el usuario lo pida explícitamente y diga cuál es (no inventarlo, no deducirlo, no sacarlo de la marca).
 - Textos cortos: títulos de 1–3 palabras por línea, ítems de ≤ 6 palabras.
 
 ## 4b · Diseño sonoro (biblioteca + ElevenLabs)

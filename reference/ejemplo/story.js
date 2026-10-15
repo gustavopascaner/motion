@@ -11,5 +11,5 @@ S('phone','b07',{kick:'HÁBITO 03 · A LAS 48 H',name:'Laura Gómez',msgs:[{t:'H
 S('bigword','b08',{kick:'CUESTA 30 SEGUNDOS',lines:['LO','RECUERDA'],size:250,sub:'durante meses',subAt:w('meses')});
 S('compare','b09',{kick:'LA DIFERENCIA',left:{title:'ANTES',items:[{t:'Se iba con una receta',at:w('receta')}]},right:{title:'AHORA',at:w('ahora'),items:[{t:'Se va sintiéndose cuidado',at:w('cuido')}]}});
 S('steps','b10',{kick:'EL RESULTADO',items:[{t:'SE SIENTE CUIDADO',at:w('cuidado'),icon:'heart'},{t:'VUELVE',at:w('vuelve'),icon:'arrow'},{t:'TE RECOMIENDA',at:w('recomienda'),icon:'users'}]});
-S('cta','b11',{kick:'¿TE SIRVIÓ?',lines:['SEGUIME'],handle:'@guspascaner',btnAt:w('seguime')});
+S('cta','b11',{kick:'¿TE SIRVIÓ?',lines:['SEGUIME'],btnAt:w('seguime')});
 };
