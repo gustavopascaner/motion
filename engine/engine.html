@@ -348,6 +348,12 @@ MOT.split=(g,p,a,D)=>{const T='M500,900 L500,620',Lb='M500,620 C500,450 260,420 
  return t=>{dash(tr,280,E.o3(P(t,.05,.45)));dash(lb,lt,E.o3(P(t,.45,.55)));dash(rb,lt,E.o3(P(t,.45,.55)));spop(n1,t,.95);spop(n2,t,.95);
   const dim=E.o3(P(t,a,.4));lb.style.opacity=n1.style.opacity=String(L(1,.25,dim));rb.style.stroke=t>=a?HL:FG;rb.style.strokeWidth=t>=a?20:16;
   const q=E.io(P(t,a-.3,1.1));let pt;if(q<.35)pt={x:500,y:L(900,620,q/.35)};else pt=rb.getPointAtLength(lt*(q-.35)/.65);mk.setAttribute('cx',pt.x);mk.setAttribute('cy',pt.y);mk.style.opacity=t>=a-.3?1:0;rp(t,a+.8);};};
+MOT.link=(g,p,a,D)=>{const A=sv('circle',{cx:250,cy:500,r:95},g,`fill:${FG}`),B=sv('circle',{cx:750,cy:500,r:95},g,`fill:${FG}`);
+ const ln=sv('path',{d:'M345,500 C440,390 560,610 655,500'},g,`fill:none;stroke:${FG};stroke-width:14;stroke-linecap:round`);const len=ln.getTotalLength?ln.getTotalLength()||340:340;
+ const dots=Array.from({length:4},()=>sv('circle',{r:17},g,`fill:${HL};opacity:0`));const ra=ripple(g,250,500),rb=ripple(g,750,500);
+ return t=>{spop(A,t,.05);spop(B,t,.2);dash(ln,len,E.o3(P(t,.35,.5)));const on=t>=a;A.style.fill=B.style.fill=on?HL:FG;ln.style.stroke=on?HL:FG;ln.style.strokeWidth=on?20:14;
+  dots.forEach((d,i)=>{const st=.8+i*.35,per=1.4;if(t<st){d.style.opacity=0;return;}const q=((t-st)%per)/per,pt=ln.getPointAtLength(len*(i%2?1-q:q));d.setAttribute('cx',pt.x);d.setAttribute('cy',pt.y);d.style.opacity=String(Math.sin(q*Math.PI));});
+  ra(t,a);rb(t,a+.15);};};
 MOT.stack=(g,p,a,D)=>{const n=p.n||6,ws=Array.from({length:n},(_,i)=>440-i*40),bs=ws.map((w,i)=>sv('rect',{x:500-w/2,y:0,width:w,height:84,rx:14},g,`fill:${i===n-1?HL:FG}`));
  sv('line',{x1:180,y1:872,x2:820,y2:872},g,`stroke:${SUB};stroke-width:8;stroke-linecap:round`);const topY=860-n*90+84;const rp=ripple(g,500,topY-20);
  return t=>{bs.forEach((b,i)=>{const st=.1+i*(Math.max(.6,a-.1)/n),q=P(t,st,.5),y=860-(i+1)*90+6;const yy=q<1?L(-120,y,Math.pow(q,2)):y-Math.max(0,Math.sin((t-st-.5)*14)*14*(1-P(t,st+.5,.35)));

@@ -57,5 +57,6 @@ Todos usan los colores del tema de la escena (`--fg`, `--hl`) y tienen un **mome
 | `dialog` | dos personas, ondas de ida y vuelta y aparece un corazón | escuchar, comunicar, vínculo, empatía |
 | `split` | camino que se bifurca; uno se apaga y el otro se resalta | elegir, decisión, el camino correcto |
 | `stack` | bloques que caen y forman una torre | construir, acumular, paso a paso, base |
+| `link` | dos nodos unidos por una línea con pulsos de ida y vuelta; en el momento clave se encienden juntos | dos partes relacionadas, conexión entre zonas del cuerpo, influencia mutua |
 
 Nuevo motivo: `MOT.nombre=(g,p,a,D,r)=>{ …dibujar con sv('circle'|'path'|'line'|…, attrs, g, css)… return t=>{…} }` en un lienzo SVG de 1000×1000 (zona visible ≈110–890). Helpers: `spop` (aparecer), `dash` (dibujar líneas), `ripple` (onda), `r()` aleatorio con semilla. Colores solo con `FG`, `HL`, `HL2`, `SUB`. Probar con `--test --at=0.5,<at>,end`.
