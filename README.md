@@ -2,7 +2,7 @@
 
 Skill para **Claude Code** y **Codex** (macOS y Windows). Le das un **guion** y produce un video animado con el guion completo (típicamente ~1 minuto; solo propone recortes si pasa los 2 minutos), listo para publicar:
 
-- **Preguntas al empezar**: voz (mujer/hombre, **argentina por defecto**), marca y música. El formato es siempre **vertical 9:16**, salvo que pidas otro (1:1, 4:5 o 16:9). Si la marca es nueva, pregunta logo, colores y tipografías, muestra una vista previa y la **guarda** para los próximos videos.
+- **Preguntas al empezar**: voz (mujer/hombre, **argentina por defecto**) y marca. La **música la elige Claude según el guion** (o usa la tuya si se la pasás) y el formato es siempre **vertical 9:16**, salvo que pidas otro (1:1, 4:5 o 16:9). Si la marca es nueva, pregunta logo, colores y tipografías, muestra una vista previa y la **guarda** para los próximos videos.
 - **Locución IA** con tiempos por palabra: ElevenLabs (más natural, voces rioplatenses o tu voz clonada; con tu clave) o edge-tts gratis (`es-AR-ElenaNeural` / `es-AR-TomasNeural`, y otros acentos). La voz elegida queda guardada en la marca.
 - **Motion graphics** a pantalla completa con la marca: 15 escenas (título, texto cinético, palabra gigante, pregunta, dato que cuenta, anillo, barras, lista, pasos, íconos, comparación, cita, chat, foto, CTA) y transiciones, todo **sincronizado con la voz**.
 - **Subtítulos dinámicos** con la palabra activa resaltada (y `.srt` aparte).
