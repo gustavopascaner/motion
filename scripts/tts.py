@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Locución del guion: genera la voz de cada beat, la une y guarda los tiempos de cada palabra.
-uso: $PY tts.py <work>                 lee <work>/script.json → <work>/voice.wav + <work>/words.json
+uso: $PY tts.py <work> [--cambiar-voz] lee <work>/script.json → <work>/voice.wav + <work>/words.json
+       Una sola voz por video (queda bloqueada en voice.lock.json); --cambiar-voz regenera TODA la locución con la voz nueva
      $PY tts.py voices [es-AR]         lista las voces de edge-tts de ese idioma
      $PY tts.py voices eleven [acento] lista voces de ElevenLabs (tuyas + biblioteca; la clave necesita el permiso "Voices: read")
      $PY tts.py samples <carpeta> "<frase>" <voz1> <voz2> …   una muestra por voz (edge o voice_id de ElevenLabs) para comparar
@@ -17,7 +18,7 @@ Cada beat se cachea (solo se regenera lo que cambió). Voces argentinas de edge:
 """
 import os as _o,sys as _s,subprocess as _sp
 if _o.name=='nt' and __name__=='__main__' and not _s.flags.utf8_mode: _s.exit(_sp.run([_s.executable,'-X','utf8','-I',_o.path.abspath(__file__),*_s.argv[1:]]).returncode)
-import asyncio,base64,hashlib,json,os,re,subprocess,sys,time,urllib.request
+import asyncio,base64,hashlib,json,os,re,shutil,subprocess,sys,time,urllib.request
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)));import timing
 SR=48000
 
@@ -58,6 +59,7 @@ def eleven(text,v,mp3,prev=None,nxt=None):
     model=v.get('model','eleven_multilingual_v2')
     body={'text':text,'model_id':model,'language_code':v.get('lang','es'),
           'voice_settings':{'stability':v.get('stability',.45),'similarity_boost':v.get('similarity',.8),'style':v.get('style',.2),'use_speaker_boost':True,'speed':v.get('speed',1.0)}}
+    body['seed']=int(hashlib.sha1(v['id'].encode()).hexdigest()[:8],16)%4294967295   # misma semilla en todos los beats: timbre y tono parejos
     if model!='eleven_v3':   # continuidad de entonación entre beats (v3 no lo admite)
         if prev: body['previous_text']=prev
         if nxt: body['next_text']=nxt
@@ -88,14 +90,31 @@ def resolve(v):
     if eng=='edge': r.setdefault('rate','+5%')
     print(f'voz por defecto ({g}): {name} · {"ElevenLabs" if eng=="eleven" else "edge-tts (gratis)"}');return r
 
-def run(W):
+# UNA SOLA VOZ POR VIDEO: la voz queda bloqueada en <work>/voice.lock.json la primera vez. Si después se pide otra
+# (otra voz, otro motor, otro modelo o ajustes), se frena: cambiarla exige regenerar TODA la locución (--cambiar-voz).
+VKEYS=('engine','id','model','rate','pitch','stability','similarity','style','speed','lang')
+def lock_check(W,v,change):
+    f=os.path.join(W,'voice.lock.json');cur={k:v[k] for k in VKEYS if k in v}
+    old=json.load(open(f)) if os.path.exists(f) else None
+    if old and {k:old[k] for k in VKEYS if k in old}!=cur:
+        if not change:
+            raise SystemExit(f"✗ Este video ya tiene la voz {old.get('name') or old['id']} ({old['engine']}) y se pidió {v.get('name') or v['id']} ({v['engine']}).\n"
+                "  Prohibido mezclar voces en un mismo video. Si falta la clave de ElevenLabs o se acabaron los créditos, NO completar con otra voz: avisar al usuario.\n"
+                "  Para cambiar la voz de TODO el video (se regenera completa): tts.py <work> --cambiar-voz")
+        shutil.rmtree(os.path.join(W,'voice'),ignore_errors=True);print(f"Cambio de voz: se regenera toda la locución con {v.get('name') or v['id']}")
+    json.dump({**cur,'name':v.get('name') or v['id']},open(f,'w'),ensure_ascii=False,indent=1)
+
+def run(W,change=False):
     t0=time.time();S=json.load(open(os.path.join(W,'script.json')));v=resolve(S['voice']);lead=S.get('lead',.35)
+    bad=[f"{b.get('id','?')}: {sorted(set(b)-{'id','text','say','pause'})}" for b in S['beats'] if set(b)-{'id','text','say','pause'}]
+    if bad: raise SystemExit('✗ Los beats solo admiten id, text, say y pause (la voz es una sola para todo el video). Sobran: '+'; '.join(bad))
+    lock_check(W,v,change)
     C=os.path.join(W,'voice','cache');os.makedirs(C,exist_ok=True)
     parts=[];words=[];beats=[];cur=lead;gen=0;SAY=[b.get('say') or b['text'] for b in S['beats']];EL=v.get('engine')=='eleven'
     if EL: print(f"ElevenLabs · voz {v['id']} · {v.get('model','eleven_multilingual_v2')} · el guion completo son {sum(map(len,SAY))} caracteres (solo se cobran los beats que cambian)")
     for i,b in enumerate(S['beats']):
         say=SAY[i];prev=SAY[i-1] if EL and i else None;nxt=SAY[i+1] if EL and i<len(SAY)-1 else None
-        key=hashlib.sha1(json.dumps([v,say,prev,nxt],sort_keys=True).encode()).hexdigest()[:16]
+        key=hashlib.sha1(json.dumps([v,say,prev,nxt,'seed1'],sort_keys=True).encode()).hexdigest()[:16]
         mp3,wj=os.path.join(C,key+'.mp3'),os.path.join(C,key+'.json')
         if not(os.path.exists(mp3) and os.path.exists(wj)):
             ws=eleven(say,v,mp3,prev,nxt) if EL else edge_tts(say,v,mp3);json.dump(ws,open(wj,'w'),ensure_ascii=False);gen+=1
@@ -113,7 +132,7 @@ def run(W):
     for k,(p,at) in enumerate(parts): args+=['-i',p];fc.append(f'[{k}]adelay={int(at*1000)}|{int(at*1000)}[a{k}]')
     fc.append(''.join(f'[a{k}]' for k in range(len(parts)))+f'amix=inputs={len(parts)}:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=7,aresample={SR}[o]')
     subprocess.run(args+['-filter_complex',';'.join(fc),'-map','[o]','-ac','1',out],check=True)
-    total=round(cur,3);json.dump({'lead':lead,'voice_end':total,'beats':beats,'words':words},open(os.path.join(W,'words.json'),'w'),ensure_ascii=False,indent=1)
+    total=round(cur,3);json.dump({'lead':lead,'voice_end':total,'voice':{k:v.get(k) for k in('engine','id','name')},'beats':beats,'words':words},open(os.path.join(W,'words.json'),'w'),ensure_ascii=False,indent=1)
     nw=len(words);print(f'✓ voz: {total:.1f} s ({nw} palabras, {nw/max(.1,total-lead):.2f} pal/s) · {gen} beat(s) generados, {len(parts)-gen} de caché')
     for b in beats: print(f"  {b['id']}  {b['s']:6.2f}–{b['e']:6.2f}  {b['text'][:70]}")
     # Se usa el guion completo: solo si pasa los 2 minutos hay que proponer recortes al usuario
@@ -145,4 +164,4 @@ if __name__=='__main__':
     if not a or a[0] in('-h','--help'): print(__doc__)
     elif a[0]=='voices': voices(a[1:])
     elif a[0]=='samples': samples(a[1],a[2],a[3:])
-    else: run(a[0])
+    else: run(a[0],'--cambiar-voz' in a)

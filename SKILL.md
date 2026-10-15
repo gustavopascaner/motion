@@ -45,6 +45,7 @@ Crear `$SK/brands/<slug>/brand.json` copiando `brands/editorial/brand.json` (en 
 
 ## 2 · Guion → beats → voz
 **El guion es del usuario: no reescribir el contenido.** Solo partirlo y ajustar la pronunciación.
+**Una sola voz por video (prohibido mezclar):** todo el video usa la misma voz, el mismo motor, modelo y ajustes. Nunca cambiar de voz entre frases, ni completar con otra voz si ElevenLabs falla (sin créditos, sin clave, error): en ese caso frenar y avisar al usuario. `tts.py` lo hace cumplir: bloquea la voz en `<work>/voice.lock.json` y rechaza otra voz o una voz por beat. Si el usuario pide cambiar la voz, se cambia en **todo** el video con `tts.py "<work>" --cambiar-voz` (regenera la locución completa) y después render + mix.
 - Partir en **beats** (1 frase o idea, 2–6 s cada uno; ≈10–18 beats por minuto). Cada beat suele ser una escena.
 - `say` (opcional) = cómo se pronuncia cuando el texto escrito confunde a la voz: números grandes ("70 %" → "setenta por ciento"), siglas ("OMS" → "o eme ese"), símbolos, años, abreviaturas. `text` queda como está escrito.
 - `pause` = silencio después del beat (default 0,38 s si termina en punto/pregunta, 0,18 s si no). Más pausa (0,6) antes de un remate o del CTA.
