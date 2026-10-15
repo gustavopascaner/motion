@@ -121,7 +121,7 @@ function plan(WD){const {tl,sfx,vo}=build(WD);
   const w=review(tl,vo);console.log(w.length?'\nDirección:\n'+w.map(x=>'⚠️  '+x).join('\n'):'\nDirección: ✓ sin avisos');}
 
 async function withPages(tl,n,fn){if(!CHROME)throw new Error('No encuentro Chrome. Instalalo o definí CHROME=/ruta');
-  const br=await puppeteer.launch({executablePath:CHROME,headless:true,args:['--allow-file-access-from-files','--force-device-scale-factor=1','--hide-scrollbars','--disable-web-security']});
+  const br=await puppeteer.launch({executablePath:CHROME,headless:true,protocolTimeout:0,args:['--allow-file-access-from-files','--force-device-scale-factor=1','--hide-scrollbars','--disable-web-security']});
   try{return await Promise.all(Array.from({length:n},async(_,k)=>{const pg=await br.newPage();await pg.setViewport({width:tl.W,height:tl.H,deviceScaleFactor:1});
     pg.on('console',m=>{if(m.type()==='warning'||m.type()==='error')console.warn('  [engine]',m.text());});
     await pg.goto(fileURL(path.join(ENG,'engine.html')));const fits=await pg.evaluate(c=>init(c),tl);const r=await fn(pg,k,fits);await pg.close();return r;}));}
