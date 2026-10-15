@@ -30,7 +30,7 @@ Clases dentro de textos: `H('x')` caja resaltada · `A('x')` color de acento · 
 Automáticos desde `words.json` (grupos de hasta 3 palabras, palabra activa en color de resaltado, `config.keywords` siempre resaltadas). Se apagan por defecto en `kinetic` y `quote`; en cualquier otra con `cap:false`. Se pueden desactivar en la marca (`captions.on:false`) o en el video (`config.captions:false`).
 
 ## SFX automáticos
-Entrada de escena con transición → whoosh · `bigword` → hit · `stat`/`donut` → ding al terminar de contar · ítems → pop/ding · CTA → click. Se eligen los más importantes, separados, hasta `config.sfx_max` (6). Manual: `sfx` en la escena o `X('categoría|id', segundo)` en story.js.
+Entrada de escena con transición → whoosh · `bigword` → hit · `stat`/`donut` → ding al terminar de contar · ítems → pop/ding · CTA → click. Se eligen los más importantes, separados, hasta `config.sfx_max` (6). Manual: `sfx` en la escena (`[['id', w('palabra')]]`) o `X('categoría|id', w('palabra') | segundo)` en story.js. Sonidos literales que no estén en la biblioteca: generarlos con `sfx.py gen` (ElevenLabs) — ver SKILL.md 4b.
 
 ## Agregar una escena nueva
 En engine.html: `SC.nombre=(p,c)=>{ …armar el DOM dentro de c.box con h(), ml(), kick()…; return t=>{ …animar según t… } }`.

@@ -6,7 +6,7 @@ Skill para **Claude Code** y **Codex** (macOS y Windows). Le das un **guion** y 
 - **Locución IA** con tiempos por palabra: ElevenLabs (más natural, voces rioplatenses o tu voz clonada; con tu clave) o edge-tts gratis (`es-AR-ElenaNeural` / `es-AR-TomasNeural`, y otros acentos). La voz elegida queda guardada en la marca.
 - **Motion graphics** a pantalla completa con la marca: 15 escenas (título, texto cinético, palabra gigante, pregunta, dato que cuenta, anillo, barras, lista, pasos, íconos, comparación, cita, chat, foto, CTA) y transiciones, todo **sincronizado con la voz**.
 - **Subtítulos dinámicos** con la palabra activa resaltada (y `.srt` aparte).
-- **Música de Envato** con volumen automático (fuerte al inicio, baja bajo la voz, sube al cierre) y **SFX sutiles** (usa la librería de la skill [edicion](https://github.com/gustavopascaner/edicion)).
+- **Música de Envato** con volumen automático (fuerte al inicio, baja bajo la voz, sube al cierre) y **SFX sutiles**: los genéricos salen de la librería de la skill [edicion](https://github.com/gustavopascaner/edicion) y los específicos (notificación, latido, tipeo…) se generan con ElevenLabs una sola vez y quedan en tu biblioteca local (`scripts/sfx.py`).
 - **Dirección**: avisa si el ritmo, la variedad o el gancho no están bien, y arma hojas de prueba antes del render.
 - Entrega `NOMBRE.mp4` (H.264/AAC, −14 LUFS), `NOMBRE.srt` y un `LEEME.md`.
 - **Proyecto editable para Premiere** (`NOMBRE_premiere.xml`): cada escena es un clip, los subtítulos y el logo van en pistas con alfa, la voz va frase por frase, y la música (con su curva de volumen) y los SFX en pistas propias. Para cambiar el texto de un gráfico se le pide a Claude y se re-renderiza solo esa escena.
@@ -38,7 +38,7 @@ Cada persona usa **su propia clave** (nunca se sube al repo). El instalador la p
 ```bash
 mkdir -p ~/.config/motion && printf '%s' 'TU_CLAVE' > ~/.config/motion/elevenlabs_key && chmod 600 ~/.config/motion/elevenlabs_key
 ```
-La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos *Text to Speech*, *Voices: Read* y *Sound Effects*. Voces por defecto: **Agustina** (mujer) y **Manuel** (hombre), argentinas. Sin clave, la skill usa Elena y Tomás de edge-tts (gratis). Se puede usar cualquier otra voz, o una voz clonada propia (requiere un plan pago de ElevenLabs), con su `voice_id`.
+La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos *Text to Speech*, *Voices: Read* y *Sound Effects* (este último para generar efectos de sonido). Voces por defecto: **Agustina** (mujer) y **Manuel** (hombre), argentinas. Sin clave, la skill usa Elena y Tomás de edge-tts (gratis). Se puede usar cualquier otra voz, o una voz clonada propia (requiere un plan pago de ElevenLabs), con su `voice_id`.
 
 ## Uso
 - **Claude Code:** `/motion` y pegá el guion (o `/motion ruta/al/guion.txt`).
@@ -51,6 +51,7 @@ La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos 
 | `scripts/render.js` | Storyboard → línea de tiempo, subtítulos, SFX, avisos de dirección, render en paralelo con Chrome |
 | `scripts/mix.py` | Voz + música + SFX → MP4 final y SRT |
 | `scripts/build_xml.py` | Proyecto XML para Premiere con todas las capas enlazadas |
+| `scripts/sfx.py` | Biblioteca de efectos: buscar y generar sonidos con ElevenLabs |
 | `scripts/brand.py` | Marcas: Google Fonts, colores desde el logo, contraste |
 | `scripts/envato.py` | Búsqueda de música en Envato y reemplazo por la licenciada |
 | `engine/engine.html` | Motor de escenas (HTML/CSS/JS) |

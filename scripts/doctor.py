@@ -35,4 +35,5 @@ row(bool(ek),'ElevenLabs (opcional)',('clave en ELEVENLABS_API_KEY' if os.enviro
 sd=[os.path.join(SK,'assets','sfx')]+[os.path.expanduser(f'~/{d}/skills/edicion/assets/sfx') for d in('.claude','.codex')]
 n,where=next(((len(glob.glob(os.path.join(d,'*','*.wav'))),d) for d in sd if glob.glob(os.path.join(d,'*','*.wav'))),(0,''))
 row(n>0,'Efectos de sonido',f'{n} archivos ({where})' if n else 'no hay (opcional: instalar la skill edicion o edicion-sfx.zip)',opt=True)
+ng=len(glob.glob(os.path.expanduser('~/.config/motion/sfx/*/*.wav')));row(ng>0,'SFX generados (ElevenLabs)',f'{ng} en ~/.config/motion/sfx' if ng else 'ninguno todavía (sfx.py gen)',opt=True)
 print('\n'.join(rows));print('\nTodo listo ✓' if not bad else f'\nFaltan {bad} cosa(s): correr los comandos indicados.');sys.exit(1 if bad else 0)

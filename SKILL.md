@@ -76,6 +76,14 @@ Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S
 - **Cierre con `cta`** (seguir / comentar una palabra / guardar / link) sincronizado con lo que dice el guion.
 - Textos cortos: títulos de 1–3 palabras por línea, ítems de ≤ 6 palabras.
 
+## 4b · Diseño sonoro (biblioteca + ElevenLabs)
+- **Genéricos, automáticos** (biblioteca): whoosh en transiciones, hit en `bigword`, ding al terminar un conteo, pop/ding en ítems, click en el CTA. Se eligen solos los más importantes y separados; en total como máximo `config.sfx_max` (6) contando los manuales.
+- **Literales, a propósito**: 1–2 por video cuando algo que se ve o se dice tiene un sonido propio (llega un mensaje, latido, tipeo, alarma, caja registradora, puerta, aplauso…). Nunca para decorar.
+  1. Buscar si ya existe: `$PY $SK/scripts/sfx.py list <palabra>` (biblioteca y generados).
+  2. Si no existe y hay clave de ElevenLabs: `$PY $SK/scripts/sfx.py gen "<descripción concreta en inglés>" --id <id-en-español> --cat <categoría> --dur <0.5–3> [--anchor peak]` (anchor `peak` para golpes/latidos, `onset` —default— para lo que arranca en el evento). Se genera **una sola vez** (gasta créditos) y queda en la biblioteca local `~/.config/motion/sfx` para todos los videos; si el id existe, se reusa gratis. Sin clave: usar solo la biblioteca.
+  3. Ubicarlo sincronizado: en la escena `sfx:[['<id>', w('palabra')]]` (reemplaza los automáticos de esa escena) o suelto `X('<id>', w('palabra'))`. Volumen: `{gain: 0.3}` como tercer elemento si hace falta.
+- Revisar en `render.js --plan` la lista final de SFX: cada uno tiene que sumar; si no, sacarlo (`sfx: null` en la escena).
+
 ## 5 · Plan, prueba y render
 1. `node $SK/scripts/render.js "<work>" --plan` → escenas con tiempos, SFX y avisos de **Dirección**. Corregir todos los ⚠️ y repetir.
 2. `node $SK/scripts/render.js "<work>" --test --at=0.3,mid,end` → `<work>/sheet.jpg` (3 cuadros por escena: entrando, a la mitad, armada). **Mirar la hoja** y corregir: textos que se achican de más (aviso "se achicó al N %"), cortes, superposiciones con los subtítulos, colores con poco contraste, escenas vacías a la mitad (el contenido tiene que aparecer rápido).
@@ -97,6 +105,6 @@ Reusar `.work`: cambiar `script.json` (voz/texto: solo se regeneran los beats to
 - Capas para Premiere: escenas en ProRes 422 HQ (opacas); subtítulos y logo en ProRes 4444 con alfa. El audio en Premiere queda ~2 dB más bajo que el MP4 (el MP4 lleva una normalización final a −14 LUFS).
 - Motor: `engine/engine.html` renderizado cuadro a cuadro con Chrome (puppeteer-core) en paralelo, H.264 yuv420p. Todas las escenas son funciones puras del tiempo.
 - El contenido de cada escena se escala solo para entrar en el área segura (por formato) sin desbordar; si se achica mucho, avisa.
-- SFX: usa la librería de la skill `edicion` si está instalada (o `assets/sfx` propia con el mismo `catalog.json`); si no hay sonidos, sigue sin ellos.
+- SFX: biblioteca de la skill `edicion` si está instalada (o `assets/sfx` propia con el mismo `catalog.json`) + generados con ElevenLabs en `~/.config/motion/sfx` (catálogo propio, compensación de volumen por sonido). Si falta un sonido, avisa y sigue sin él.
 - Voz: edge-tts usa el servicio de voz de Microsoft Edge (requiere internet, sin clave). ElevenLabs: `{"engine":"eleven","id":"<voice_id>"}` en script.json; clave en `ELEVENLABS_API_KEY` o `~/.config/motion/elevenlabs_key`. Cada beat se genera con el anterior y el siguiente como contexto (entonación continua) y queda en caché: solo se cobran los beats que cambian (≈1000 caracteres por minuto de guion).
 - No usar `rm -rf` con globs relativos.

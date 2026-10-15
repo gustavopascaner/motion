@@ -63,11 +63,15 @@ function build(WD){
   const capsOn=cfg.captions??(brand.captions||{}).on??true;
   // ───── diseño sonoro automático (pocos y sutiles) ─────
   const SD=sfxDir(),CAT=JSON.parse(fs.readFileSync(path.join(SK,'assets','sfx','catalog.json'),'utf8'));
+  // biblioteca local de sonidos generados con ElevenLabs (sfx.py gen): ~/.config/motion/sfx
+  const LSD=path.join(os.homedir(),'.config','motion','sfx'),LC=path.join(LSD,'catalog.json');
+  if(fs.existsSync(LC)){const l=JSON.parse(fs.readFileSync(LC,'utf8'));Object.assign(CAT.categories,l.categories||{});
+    for(const [k,v] of Object.entries(l.sounds||{}))CAT.sounds[k]={...v,root:LSD};}
   const AUTO={bigword:p=>[['hit',p.at??.2,10]],stat:p=>[['ding',p.countEnd??((p.at??.25)+1.2),7]],donut:p=>[['ding',(p.at??.3)+1.3,6]],
     cta:p=>p.action==='comment'?[['click',(p.btnAt??1.4)+.75,8]]:[['click',p.btnAt??1.4,8]],question:()=>[['pop',.1,4]],
     list:p=>p.items.map((it,k)=>[it.mark==='x'?'error':it.mark==='check'?'ding':'pop',it.at??(.4+k*.3),2]),icons:p=>p.items.map((it,k)=>['pop',it.at??(.35+k*.25),2]),
     steps:p=>p.items.map((it,k)=>['pop',it.at??(.4+k*.4),2]),phone:p=>(p.msgs||[]).map((m,k)=>['pop',m.at??(.4+k*.7),3])};
-  const ev=[...sounds];
+  const ev=sounds.map(e=>e.t&&e.t.__w?{...e,t:findW(e.t,0)}:e);
   for(const x of sc){const p=x.p;if(p.sfx===null)continue;
     if(p.sfx){(Array.isArray(p.sfx)?p.sfx:[p.sfx]).forEach(q=>{const [spec,at=0,o={}]=Array.isArray(q)?q:[q];ev.push({spec,t:x.s+at,o,manual:true});});continue;}
     if(x.tr!=='cut'||x.i===0)ev.push({spec:'whoosh',t:x.s+(x.i===0?0:.05),o:{},score:x.i===0?9:5});
@@ -79,9 +83,9 @@ function build(WD){
     let id=e.spec;const all=Object.keys(CAT.sounds).filter(k=>CAT.sounds[k].cat===e.spec&&CAT.sounds[k].rotate!==false);
     if(all.length){let k=(rot[e.spec]=(rot[e.spec]??-1)+1)%all.length;if(all.length>1&&all[k]===lastId)k=(k+1)%all.length;id=all[k];}
     const m=CAT.sounds[id];if(!m){console.warn(`⚠️  SFX "${e.spec}" no existe en el catálogo`);continue;}lastId=id;
-    const file=path.join(SD,m.file);if(!fs.existsSync(file)){missing.add(id);continue;}
+    const file=path.join(m.root||SD,m.file);if(!fs.existsSync(file)){missing.add(id);continue;}
     let start=e.t-m.anchor,sin=0;if(start<0){sin=-start;start=0;}
-    sfx.push({id,file,start:+start.toFixed(3),sin:+sin.toFixed(3),dur:+Math.min(e.o.dur||m.dur,m.dur-sin).toFixed(3),gain:e.o.gain??CAT.categories[m.cat].gain,at:+e.t.toFixed(3),auto:!e.manual});}
+    sfx.push({id,file,start:+start.toFixed(3),sin:+sin.toFixed(3),dur:+Math.min(e.o.dur||m.dur,m.dur-sin).toFixed(3),gain:+(e.o.gain??CAT.categories[m.cat].gain*(m.gain_adj||1)).toFixed(3),at:+e.t.toFixed(3),auto:!e.manual});}
   if(missing.size)console.warn('⚠️  Faltan sonidos de la librería (se omiten):',[...missing].join(', '));
   const scenes=sc.map(x=>({type:x.type,s:x.s,e:x.e,bg:x.bg,tr:x.tr,cap:x.cap,p:x.p,words:x.words}));
   const tl={W,H,fps:FPS,total,brand,scenes,caps,capsOn,logoCorner:cfg.logo_corner};
