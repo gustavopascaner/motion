@@ -63,7 +63,7 @@ def main(W):
     else: print('ℹ️  sin música (config.music.path vacío)')
     for i,x in enumerate(sfx):
         args+=['-i',x['file']];ms=int(x['start']*1000)
-        fc.append(f"[{k}]atrim={x['sin']}:{x['sin']+x['dur']:.3f},asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo,volume={x['gain']},adelay={ms}|{ms}[s{i}]");mix.append(f'[s{i}]');k+=1
+        fc.append(f"[{k}]atrim={x['sin']}:{x['sin']+x['dur']:.3f},asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo,{'afade=t=in:d=0.04,' if x['sin']>0 else ''}volume={x['gain']},adelay={ms}|{ms}[s{i}]");mix.append(f'[s{i}]');k+=1
     pre=';'.join(fc+[''.join(mix)+f"amix=inputs={len(mix)}:normalize=0:duration=first"])
     fc=[pre+','+loudnorm2(args,pre)+f",aresample=48000,atrim=0:{T:.3f}[a]"]
     final=os.path.join(out_dir,name+'.mp4')

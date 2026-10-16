@@ -84,6 +84,7 @@ Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S
 
 ## 4b · Diseño sonoro (biblioteca + ElevenLabs)
 - **Genéricos, automáticos** (biblioteca): whoosh **suave** en transiciones (se le filtran los graves y el ataque), ding al terminar un conteo, pop/ding en ítems, click en el CTA.
+- **El video arranca sin SFX**: nada de sonidos en el primer medio segundo (ni whoosh en la primera escena, ni manuales en 0); `render.js` los omite solo. El arranque lo hacen la voz y la música.
 - **Prohibido usar golpes graves ('boom')**: nada de hits, bass drops, risers que explotan, impactos ni sonidos con mucho grave como remate. El usuario quiere transiciones suaves. Tampoco generarlos con ElevenLabs (al generar transiciones pedir *soft, airy, no bass, no impact*). Se eligen solos los más importantes y separados; en total como máximo `config.sfx_max` (6) contando los manuales.
 - **Literales, a propósito**: 1–2 por video cuando algo que se ve o se dice tiene un sonido propio (llega un mensaje, latido, tipeo, alarma, caja registradora, puerta, aplauso…). Nunca para decorar.
   1. Buscar si ya existe: `$PY $SK/scripts/sfx.py list <palabra>` (biblioteca y generados).

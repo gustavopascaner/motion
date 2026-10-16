@@ -85,7 +85,8 @@ function build(WD){
   const ev=sounds.map(e=>e.t&&e.t.__w?{...e,t:findW(e.t,0)}:e);
   for(const x of sc){const p=x.p;if(p.sfx===null)continue;
     if(p.sfx){(Array.isArray(p.sfx)?p.sfx:[p.sfx]).forEach(q=>{const [spec,at=0,o={}]=Array.isArray(q)?q:[q];ev.push({spec,t:x.s+at,o,manual:true});});continue;}
-    if(x.tr!=='cut'||x.i===0)ev.push({spec:'whoosh',t:x.s+(x.i===0?0:.05),o:{},score:x.i===0?9:x.type==='bigword'?8:5});
+    // la primera escena no lleva whoosh: no hay transición y arrancaría cortado en su pico (suena a golpe al empezar el video)
+    if(x.i>0&&x.tr!=='cut')ev.push({spec:'whoosh',t:x.s+.05,o:{},score:x.type==='bigword'?8:5});
     for(const [spec,at,score] of (AUTO[x.type]||(()=>[]))(p))if(at<x.e-x.s)ev.push({spec,t:x.s+at,o:{},score});}
   const MAX=cfg.sfx_max??6,SEP=Math.max(3,Math.min(6,total/(MAX*1.6)));const kept=ev.filter(e=>e.manual);
   for(const e of ev.filter(e=>!e.manual).sort((a,b)=>b.score-a.score||a.t-b.t)){if(kept.length>=MAX)break;if(kept.some(k=>Math.abs(k.t-e.t)<SEP))continue;kept.push(e);}
@@ -100,6 +101,7 @@ function build(WD){
       if(!fs.existsSync(out))spawnSync('ffmpeg',['-v','error','-y','-i',file,'-af','highpass=f=220:poles=2,highpass=f=220:poles=2,lowpass=f=9000,afade=t=in:d=0.08',out]);
       if(fs.existsSync(out))file=out;}
     let start=e.t-m.anchor,sin=0;if(start<0){sin=-start;start=0;}
+    if(e.t<.5){console.warn(`⚠️  SFX "${id}" en ${e.t.toFixed(2)} s: se omite (nada de sonidos al arrancar el video)`);continue;}
     sfx.push({id,file,start:+start.toFixed(3),sin:+sin.toFixed(3),dur:+Math.min(e.o.dur||m.dur,m.dur-sin).toFixed(3),gain:+(e.o.gain??CAT.categories[m.cat].gain*(m.gain_adj||1)).toFixed(3),at:+e.t.toFixed(3),auto:!e.manual});}
   if(missing.size)console.warn('⚠️  Faltan sonidos de la librería (se omiten):',[...missing].join(', '));
   const scenes=sc.map(x=>({type:x.type,s:x.s,e:x.e,bg:x.bg,tr:x.tr,cap:x.cap,p:x.p,words:x.words}));
