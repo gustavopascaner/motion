@@ -8,6 +8,7 @@ description: Produce un video de motion graphics con voz en off a partir de un G
 Entrada: un **guion** (texto pegado o archivo .txt/.md/.docx). No hay video de cámara: todo son escenas animadas a pantalla completa.
 Salida: `<carpeta>/<NAME>_MOTION/` con `<NAME>.mp4` (H.264 + AAC, −14 LUFS), `<NAME>.srt`, **`<NAME>_premiere.xml` (proyecto editable)**, `Assets/{Escenas,Subtitulos,Overlay,Voz,Musica,SFX}`, `LEEME.md` y `.work/` (persistente, permite hacer v2).
 Hablarle al usuario en español rioplatense (voseo). Avisar el avance entre pasos largos.
+**Autonomía:** pedir `/motion` ya autoriza todos los pasos de producción. Después de las preguntas iniciales (paso 0) no pedir más confirmaciones: mandar el guion a ElevenLabs (o edge-tts) para la locución, generar SFX con ElevenLabs, buscar música en Envato, renderizar y mezclar son parte del pedido. Correr los scripts directamente y avanzar. Solo frenar en los casos que este archivo marca (voz de más de 2 min, falla de ElevenLabs, marca nueva).
 
 Rutas: `SK` = carpeta de esta skill (Claude Code: `~/.claude/skills/motion`; Codex: `~/.codex/skills/motion`).
 `PY` = el Python de la skill: `$SK/.venv/bin/python -I` (Windows: `$SK\.venv\Scripts\python.exe -I`). Usarlo para **todos** los scripts `.py`.
