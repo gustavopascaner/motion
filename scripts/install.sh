@@ -36,7 +36,7 @@ for d in "$HOME/.claude/skills" "$HOME/.codex/skills"; do
   if [ -e "$d/motion" ] && [ ! -L "$d/motion" ]; then
     if [ "$(cd "$d/motion" && pwd -P)" = "$(cd "$SK" && pwd -P)" ]; then ok "Skill en $d/motion"; continue; fi
     # una copia aparte se desincroniza del repo: guardar sus marcas, apartarla y enlazar
-    migrate_brands "$d/motion"; BK="$d/motion.bak-$(date +%Y%m%d-%H%M%S)"; mv "$d/motion" "$BK" && warn "Había una copia aparte de la skill: quedó en $BK (borrala cuando confirmes que todo anda)"
+    migrate_brands "$d/motion"; mkdir -p "$HOME/.config/motion/backups"; BK="$HOME/.config/motion/backups/motion.bak-$(date +%Y%m%d-%H%M%S)"   # fuera de skills/: si no, aparece como otra skill; mv "$d/motion" "$BK" && warn "Había una copia aparte de la skill: quedó en $BK (borrala cuando confirmes que todo anda)"
   fi
   ln -sfn "$SK" "$d/motion" && ok "Skill enlazada en $d/motion"
 done

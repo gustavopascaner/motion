@@ -32,7 +32,7 @@ foreach ($d in @("$HOME\.claude\skills","$HOME\.codex\skills")) {
   $it = Get-Item "$d\motion" -ErrorAction SilentlyContinue
   if ($it -and -not $it.LinkType -and $it.FullName -ne (Get-Item $SK).FullName) {
     # una copia aparte se desincroniza del repo: guardar sus marcas, apartarla y enlazar
-    Move-Brands $it.FullName; $bk = "$d\motion.bak-$(Get-Date -Format yyyyMMdd-HHmmss)"; Move-Item $it.FullName $bk; Warn "Había una copia aparte de la skill: quedó en $bk (borrala cuando confirmes que todo anda)"; $it = $null }
+    Move-Brands $it.FullName; New-Item -ItemType Directory -Force "$HOME\.config\motion\backups" | Out-Null; $bk = "$HOME\.config\motion\backups\motion.bak-$(Get-Date -Format yyyyMMdd-HHmmss)"; Move-Item $it.FullName $bk; Warn "Había una copia aparte de la skill: quedó en $bk (borrala cuando confirmes que todo anda)"; $it = $null }
   if ($it) { Ok "Skill en $d\motion" } else { New-Item -ItemType Junction -Path "$d\motion" -Target $SK | Out-Null; Ok "Skill enlazada en $d\motion" }
 }
 Write-Host ""; & $py -3 -I "$SK\scripts\doctor.py"

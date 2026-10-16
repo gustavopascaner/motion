@@ -33,7 +33,7 @@ git clone https://github.com/gustavopascaner/motion.git $HOME\skills\motion
 powershell -ExecutionPolicy Bypass -File $HOME\skills\motion\scripts\install.ps1
 ```
 
-El instalador agrega lo que falte (Node, FFmpeg, Chrome), crea un entorno de Python con `edge-tts`, instala las dependencias y enlaza la skill en `~/.claude/skills/motion` y `~/.codex/skills/motion` (si ahí había una copia aparte, guarda sus marcas en `~/.config/motion/brands`, la aparta como `motion.bak-<fecha>` y pone el enlace: así hay una sola copia y `git pull` la actualiza). Para los efectos de sonido usa los de la skill `edicion` si está instalada (o pasale la ruta a `edicion-sfx.zip`). Chequeo: `python3 -I scripts/doctor.py`.
+El instalador agrega lo que falte (Node, FFmpeg, Chrome), crea un entorno de Python con `edge-tts`, instala las dependencias y enlaza la skill en `~/.claude/skills/motion` y `~/.codex/skills/motion` (si ahí había una copia aparte, guarda sus marcas en `~/.config/motion/brands`, la aparta en `~/.config/motion/backups/` y pone el enlace: así hay una sola copia y `git pull` la actualiza). Para los efectos de sonido usa los de la skill `edicion` si está instalada (o pasale la ruta a `edicion-sfx.zip`). Chequeo: `python3 -I scripts/doctor.py`.
 
 ### Voz con ElevenLabs (opcional, más natural)
 Cada persona usa **su propia clave** (nunca se sube al repo). El instalador la pide (Enter para saltear) y la guarda en `~/.config/motion/elevenlabs_key`. También se puede hacer a mano:
