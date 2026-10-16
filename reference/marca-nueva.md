@@ -11,4 +11,4 @@ Armado:
 2. `$PY $SK/scripts/brand.py setup <slug>` — baja las fuentes, copia el logo, chequea contraste: corregir los ⚠️.
 3. Muestra: `node $SK/scripts/render.js --brand-preview=<slug> --out=<work>/marca.jpg --format=<formato>` → mirar la imagen y mostrársela al usuario; confirmar antes de seguir (es rápido de ajustar).
 
-La marca queda guardada para la próxima. Si una marca tiene que fijar tokens de diseño en todos sus videos: `brand.json` → `"design": {"lock": {…}}` (mismas claves que `look.json`, ver `escenas.md`).
+La marca queda guardada para la próxima, y también la usa la skill **edicion** (`/edicion` pregunta la marca al empezar y aplica sus colores, tipografías y subtítulos a los motion graphics; ahí no lleva logo). Si una marca tiene que fijar tokens de diseño en todos sus videos: `brand.json` → `"design": {"lock": {…}}` (mismas claves que `look.json`, ver `escenas.md`).

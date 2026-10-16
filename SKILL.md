@@ -23,7 +23,7 @@ Leer primero el guion y `$PY $SK/scripts/brand.py list` (marcas guardadas). Desp
 1. **Voz** — si la marca elegida tiene `voice` guardada, ofrecer primero *La de la marca (<nombre>)*. Si no: *Mujer* o *Hombre*, por defecto **argentina** (`"voice": {"id":"mujer"}` / `{"id":"hombre"}`: ElevenLabs si hay clave, si no edge-tts). Ofrecer otras voces, otro acento o cargar la clave de ElevenLabs solo si el usuario lo pide: ver `reference/voces.md`.
 2. **Marca** — una de las guardadas (mostrarlas por nombre) o *Marca nueva*.
 
-**Si es marca nueva**: segunda tanda de preguntas y armado según `reference/marca-nueva.md` (la marca se guarda en `~/.config/motion/brands/<slug>`).
+**Si es marca nueva**: segunda tanda de preguntas y armado según `reference/marca-nueva.md` (la marca se guarda en `~/.config/motion/brands/<slug>` y sirve también para `/edicion`).
 
 ## 1 · Preparación
 - `NAME` en MAYÚSCULAS_CON_GUIONES a partir del tema. Carpeta: la del archivo de guion, o el directorio de trabajo si lo pegó. `work=<carpeta>/<NAME>_MOTION/.work`.

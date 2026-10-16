@@ -57,7 +57,7 @@ La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos 
 | `scripts/brand.py` | Marcas: Google Fonts, colores desde el logo, contraste |
 | `scripts/envato.py` | Búsqueda de música en Envato y reemplazo por la licenciada |
 | `engine/engine.html` | Motor de escenas (HTML/CSS/JS) |
-| `brands/` | Marca de ejemplo (`editorial`). Las propias se guardan en `~/.config/motion/brands/` (fuera del repo) |
+| `brands/` | Marca de ejemplo (`editorial`). Las propias se guardan en `~/.config/motion/brands/` (fuera del repo) y las usa también la skill [edicion](https://github.com/gustavopascaner/edicion) |
 | `scripts/look.js`, `scripts/design.js` | Dirección de arte por video e historial de looks por marca |
 | `reference/` | Catálogo de escenas, guías por tema (marca nueva, voces, Envato, Premiere, preferencias) y un ejemplo completo |
 | `scripts/selftest.sh` | Prueba rápida sin red: plan, hoja de prueba, subtítulos y variantes del motor |
