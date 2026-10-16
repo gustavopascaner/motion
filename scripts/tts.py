@@ -78,9 +78,42 @@ def eleven(text,v,mp3,prev=None,nxt=None):
     return [w for w in ws if re.search(r'\w',w['w'])]
 def raise_(m): raise SystemExit(m)
 
+# Texto escrito vs. pronunciado: si el beat tiene "say", los tiempos salen de lo pronunciado pero los subtítulos
+# tienen que mostrar lo escrito ("70 %", "OMS"). Cada palabra hablada recibe "d" (lo que se muestra; "" = se une a
+# la anterior) y, si agrupa varias habladas, "de" (fin del grupo).
+import unicodedata
+def _n(s): return re.sub(r'[^a-z0-9%]','',unicodedata.normalize('NFD',s.lower()).encode('ascii','ignore').decode())
+def display(text,ws):
+    import difflib
+    text=re.sub(r'(\d)\s+%','\\1\u00a0%',re.sub(r'[ \t\r\n]+',' ',text.strip()))   # "70 %" queda en un solo token
+    toks=[t for t in (re.sub(r'^[^\w]+|[^\w%]+$','',x) for x in text.split(' ')) if t]
+    out=[dict(w) for w in ws];ins=[]
+    sm=difflib.SequenceMatcher(None,[_n(w['w']) for w in ws],[_n(t) for t in toks],autojunk=False)
+    for op,i1,i2,j1,j2 in sm.get_opcodes():
+        if op=='equal':
+            for k in range(i2-i1): out[i1+k]['d']=toks[j1+k]
+        elif op=='replace':
+            out[i1]['d']=' '.join(toks[j1:j2]);out[i1]['de']=out[i2-1]['e']
+            for k in range(i1+1,i2): out[k]['d']=''
+        elif op=='delete':
+            for k in range(i1,i2): out[k]['d']=''
+        else: ins.append((i1,' '.join(toks[j1:j2])))   # texto sin palabra hablada: se pega a la vecina
+    for i1,extra in ins:
+        if not out: break
+        k=max(0,i1-1);base=out[k].get('d',out[k]['w'])
+        out[k]['d']=(base+' '+extra if i1 else extra+' '+base).strip()
+    return out
+
 # Voces por defecto (argentinas). Con clave de ElevenLabs: Agustina (mujer) y Manuel (hombre); sin clave: edge-tts.
 DEFAULTS={'eleven':{'mujer':('TZvhlMgMw2P4gPSuD8v7','Agustina'),'hombre':('L7pBVwjueW3IPcQt4Ej9','Manuel')},
           'edge':{'mujer':('es-AR-ElenaNeural','Elena'),'hombre':('es-AR-TomasNeural','Tomás')}}
+# preferencias del usuario (fuera del repo): ~/.config/motion/prefs.json → {"voices":{"eleven":{"mujer":["<voice_id>","Nombre"]}}}
+PREFS=os.path.expanduser('~/.config/motion/prefs.json')
+try:
+    for e,g in (json.load(open(PREFS)).get('voices') or {}).items():
+        for k,(vid,name) in g.items(): DEFAULTS.setdefault(e,{})[k]=(vid,name)
+except FileNotFoundError: pass
+except Exception as e: print(f'⚠️  no pude leer {PREFS}: {e}')
 def resolve(v):
     """"id": "mujer" | "hombre" → la voz por defecto (ElevenLabs si hay clave o si engine es "eleven"; si no, edge-tts)."""
     g=str(v.get('id','')).lower()
@@ -120,11 +153,16 @@ def run(W,change=False):
             ws=eleven(say,v,mp3,prev,nxt) if EL else edge_tts(say,v,mp3);json.dump(ws,open(wj,'w'),ensure_ascii=False);gen+=1
         ws=json.load(open(wj))
         if not ws: raise SystemExit(f"{b['id']}: la voz no devolvió palabras")
+        if b.get('say') and b['say']!=b['text']: ws=display(b['text'],ws)
         a=max(0,ws[0]['s']-.04);z=ws[-1]['e']+.12
         wav=os.path.join(W,'voice',f"{b['id']}.wav")
         subprocess.run(['ffmpeg','-v','error','-y','-i',mp3,'-af',f'atrim={a:.3f}:{z:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={max(0,z-a-.06):.3f}:d=0.06','-ar',str(SR),'-ac','1',wav],check=True)
         dur=z-a;parts.append((wav,cur))
-        for w in ws: words.append({'w':w['w'],'s':round(cur+w['s']-a,3),'e':round(cur+w['e']-a,3),'beat':b['id']})
+        for w in ws:
+            x={'w':w['w'],'s':round(cur+w['s']-a,3),'e':round(cur+w['e']-a,3),'beat':b['id']}
+            if 'd' in w and w['d']!=w['w']: x['d']=w['d']
+            if 'de' in w: x['de']=round(cur+w['de']-a,3)
+            words.append(x)
         pause=b.get('pause',.38 if re.search(r'[.?!…]$',b['text'].strip()) else .18)
         beats.append({'id':b['id'],'text':b['text'],'s':round(cur,3),'e':round(cur+dur,3)});cur+=dur+(pause if i<len(S['beats'])-1 else 0)
     # mezcla de beats en sus tiempos + normalización de la voz (−16 LUFS)

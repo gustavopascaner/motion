@@ -22,9 +22,18 @@ Info "Instalando dependencias de Node..."; Push-Location "$SK\engine"; npm ci --
 if ($Zip) { Expand-Archive -Force $Zip "$SK\assets\sfx"; Ok "Efectos de sonido del zip" }
 elseif (Test-Path "$HOME\.claude\skills\edicion\assets\sfx\whoosh") { Ok "Efectos de sonido: se usan los de la skill edicion" }
 else { Warn "Sin efectos de sonido (opcional): instalá la skill edicion o pasá la ruta a edicion-sfx.zip" }
+# marcas propias fuera del repo (~\.config\motion\brands): sobreviven a reinstalar y no se pisan entre copias
+$UB = "$HOME\.config\motion\brands"; New-Item -ItemType Directory -Force $UB | Out-Null
+function Move-Brands($from) { Get-ChildItem -Directory "$from\brands" -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'editorial' -and (Test-Path "$($_.FullName)\brand.json") } | ForEach-Object {
+  if (Test-Path "$UB\$($_.Name)") { Info "Marca $($_.Name) ya está en $UB" } else { Copy-Item -Recurse $_.FullName "$UB\$($_.Name)"; Ok "Marca $($_.Name) → $UB\$($_.Name)" } } }
+Move-Brands $SK
 foreach ($d in @("$HOME\.claude\skills","$HOME\.codex\skills")) {
   New-Item -ItemType Directory -Force $d | Out-Null
-  if (Test-Path "$d\motion") { Ok "Skill en $d\motion" } else { New-Item -ItemType Junction -Path "$d\motion" -Target $SK | Out-Null; Ok "Skill enlazada en $d\motion" }
+  $it = Get-Item "$d\motion" -ErrorAction SilentlyContinue
+  if ($it -and -not $it.LinkType -and $it.FullName -ne (Get-Item $SK).FullName) {
+    # una copia aparte se desincroniza del repo: guardar sus marcas, apartarla y enlazar
+    Move-Brands $it.FullName; $bk = "$d\motion.bak-$(Get-Date -Format yyyyMMdd-HHmmss)"; Move-Item $it.FullName $bk; Warn "Había una copia aparte de la skill: quedó en $bk (borrala cuando confirmes que todo anda)"; $it = $null }
+  if ($it) { Ok "Skill en $d\motion" } else { New-Item -ItemType Junction -Path "$d\motion" -Target $SK | Out-Null; Ok "Skill enlazada en $d\motion" }
 }
 Write-Host ""; & $py -3 -I "$SK\scripts\doctor.py"
 Write-Host ""; Write-Host "Listo. En Claude Code: /motion <guion>   ·   En Codex: `$motion <guion>"

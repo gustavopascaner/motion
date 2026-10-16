@@ -11,6 +11,11 @@ exports.VARIANTS={title:['stack','offset','framed'],kinetic:['rise','pop','light
 exports.TRANSITIONS=['wipe','slide','circle','push','zoom','cut','wipex','split','diag','shape','blinds'];
 exports.DECOR=['blobs','rings','dots','stripes','halftone','glyph','orbit','lines','gradient','sun'];
 
+// marcas: las propias en ~/.config/motion/brands/<marca> (fuera del repo, sobreviven a reinstalar); las de ejemplo en <skill>/brands
+exports.USER_BRANDS=path.join(os.homedir(),'.config','motion','brands');
+exports.brandDir=slug=>{if(path.isAbsolute(String(slug)))return slug;const u=path.join(exports.USER_BRANDS,slug);
+  return fs.existsSync(path.join(u,'brand.json'))?u:path.join(__dirname,'..','brands',slug);};
+
 // look.json del work + lo que la marca fija (brand.design.lock le gana al look)
 exports.loadLook=(WD,brand)=>{const f=path.join(WD,'look.json');const lk=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):{};
   return {...lk,...((brand.design||{}).lock||{})};};
@@ -26,6 +31,11 @@ exports.LOOKS_DIR=path.join(os.homedir(),'.config','motion','looks');
 exports.historyFile=slug=>path.join(exports.LOOKS_DIR,path.basename(String(slug))+'.json');
 exports.history=(slug,WD)=>{const f=exports.historyFile(slug);if(!fs.existsSync(f))return [];
   try{return JSON.parse(fs.readFileSync(f,'utf8')).filter(x=>!WD||path.resolve(x.work||'')!==path.resolve(WD));}catch(e){return [];}};
+
+// parecido entre dos ideas de concept (palabras con contenido en común, 0–1): el hash del código no alcanza para saber si la idea es nueva
+const STOP=new Set('el la los las un una unos unas de del y o que en con por para se su sus al lo como entre sin hacia desde'.split(' '));
+const toks=s=>new Set(String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/[^a-z0-9]+/).filter(w=>w.length>2&&!STOP.has(w)).map(w=>w.replace(/(es|s)$/,'')));
+exports.ideaSim=(a,b)=>{const A=toks(a),B=toks(b);if(!A.size||!B.size)return 0;let n=0;for(const x of A)if(B.has(x))n++;return n/Math.min(A.size,B.size);};
 
 // parecido entre dos looks (0–1) por tokens de diseño
 exports.LOOK_KEYS=['align','valign','frame','scale','kick','kickFont','hl','panel','radius','decor','motion','cam','transitions','palette','hlPrefer','captions','variants'];

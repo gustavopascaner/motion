@@ -33,7 +33,7 @@ git clone https://github.com/gustavopascaner/motion.git $HOME\skills\motion
 powershell -ExecutionPolicy Bypass -File $HOME\skills\motion\scripts\install.ps1
 ```
 
-El instalador agrega lo que falte (Node, FFmpeg, Chrome), crea un entorno de Python con `edge-tts`, instala las dependencias y enlaza la skill en `~/.claude/skills/motion` y `~/.codex/skills/motion`. Para los efectos de sonido usa los de la skill `edicion` si está instalada (o pasale la ruta a `edicion-sfx.zip`). Chequeo: `python3 -I scripts/doctor.py`.
+El instalador agrega lo que falte (Node, FFmpeg, Chrome), crea un entorno de Python con `edge-tts`, instala las dependencias y enlaza la skill en `~/.claude/skills/motion` y `~/.codex/skills/motion` (si ahí había una copia aparte, guarda sus marcas en `~/.config/motion/brands`, la aparta como `motion.bak-<fecha>` y pone el enlace: así hay una sola copia y `git pull` la actualiza). Para los efectos de sonido usa los de la skill `edicion` si está instalada (o pasale la ruta a `edicion-sfx.zip`). Chequeo: `python3 -I scripts/doctor.py`.
 
 ### Voz con ElevenLabs (opcional, más natural)
 Cada persona usa **su propia clave** (nunca se sube al repo). El instalador la pide (Enter para saltear) y la guarda en `~/.config/motion/elevenlabs_key`. También se puede hacer a mano:
@@ -57,8 +57,9 @@ La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos 
 | `scripts/brand.py` | Marcas: Google Fonts, colores desde el logo, contraste |
 | `scripts/envato.py` | Búsqueda de música en Envato y reemplazo por la licenciada |
 | `engine/engine.html` | Motor de escenas (HTML/CSS/JS) |
-| `brands/` | Marcas guardadas (las propias no se suben al repo; `editorial` es la de ejemplo) |
+| `brands/` | Marca de ejemplo (`editorial`). Las propias se guardan en `~/.config/motion/brands/` (fuera del repo) |
 | `scripts/look.js`, `scripts/design.js` | Dirección de arte por video e historial de looks por marca |
-| `reference/` | Catálogo de escenas y un ejemplo completo |
+| `reference/` | Catálogo de escenas, guías por tema (marca nueva, voces, Envato, Premiere, preferencias) y un ejemplo completo |
+| `scripts/selftest.sh` | Prueba rápida sin red: plan, hoja de prueba, subtítulos y variantes del motor |
 
 Tipografías de `brands/editorial/fonts` y las que baja `brand.py`: Google Fonts (SIL Open Font License). La música de Envato se **licencia y descarga automáticamente, sin preguntar**, desde tu sesión de Envato en el navegador de la app de Claude: iniciás sesión vos una sola vez (Claude nunca usa tu contraseña) y en cada video se reemplaza la vista previa por el WAV original, sin marca de agua. Si no hay sesión o falla la descarga, el video se entrega igual con la vista previa y te avisa.

@@ -14,7 +14,7 @@ const arg=k=>{const a=process.argv.find(x=>x.startsWith('--'+k+'='));return a?a.
 const FORMATS={'9:16':[1080,1920],'1:1':[1080,1080],'4:5':[1080,1350],'16:9':[1920,1080]};
 const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9%]/g,'');
 
-function loadBrand(slug){const dir=path.isAbsolute(slug)?slug:path.join(SK,'brands',slug);const f=path.join(dir,'brand.json');
+function loadBrand(slug){const dir=require('./design.js').brandDir(slug);const f=path.join(dir,'brand.json');
   if(!fs.existsSync(f))throw new Error(`No existe la marca "${slug}" (${f}). Ver: $PY scripts/brand.py list`);
   const b=JSON.parse(fs.readFileSync(f,'utf8'));
   for(const k in b.fonts||{})for(const x of b.fonts[k].files||[]){const p=path.isAbsolute(x.file)?x.file:path.join(dir,x.file);
@@ -23,7 +23,7 @@ function loadBrand(slug){const dir=path.isAbsolute(slug)?slug:path.join(SK,'bran
   return b;}
 
 // ───── look (dirección de arte del video) y diseño a medida: ver scripts/design.js ─────
-const {PAL,loadLook,customDefs,history,lookSim}=require('./design.js');
+const {PAL,loadLook,customDefs,history,lookSim,ideaSim}=require('./design.js');
 const ENG_SRC=fs.readFileSync(path.join(ENG,'engine.html'),'utf8');
 const BUILTIN_SC=new Set([...ENG_SRC.matchAll(/^SC\.(\w+)=/gm)].map(m=>m[1])),BUILTIN_MOT=new Set([...ENG_SRC.matchAll(/^MOT\.(\w+)=/gm)].map(m=>m[1]));
 
@@ -35,7 +35,9 @@ function build(WD){
   const cfg=JSON.parse(fs.readFileSync(path.join(WD,'config.json'),'utf8'));
   const [W,H]=FORMATS[cfg.format||'9:16']||cfg.size;const FPS=cfg.fps||30;
   const brand=loadBrand(cfg.brand||'editorial');const vo=JSON.parse(fs.readFileSync(path.join(WD,'words.json'),'utf8'));
-  const words=vo.words,beats=vo.beats,total=+(vo.voice_end+(cfg.tail??1.6)).toFixed(3);
+  const words=vo.words,beats=vo.beats,
+    // lo que se muestra: si el beat tenía "say", cada palabra trae "d" (texto escrito; "" = se une a la anterior) y "de" (fin del grupo)
+    shown=words.filter(x=>x.d!=='').map(x=>({...x,w:x.d??x.w,e:x.de??x.e})),total=+(vo.voice_end+(cfg.tail??1.6)).toFixed(3);
   const raw=[];const w=(word,n=0)=>({__w:word,n});
   const S=(type,start,p={})=>raw.push({type,start,p});
   const sounds=[];const X=(spec,t,o={})=>sounds.push({spec,t,o,manual:true});
@@ -45,8 +47,8 @@ function build(WD){
   if(!raw.length)throw new Error('story.js no definió escenas');
   const beatS=id=>{const b=beats.find(b=>b.id===id);if(!b)throw new Error('no existe el beat '+id);return b.s;};
   const findW=(m,from,to=1e9)=>{const n=norm(m.__w);let k=0;
-    for(const pass of['exact','prefix'])for(const x of words){if(x.s<from-.25||x.s>=to)continue;const y=norm(x.w);
-      if(pass==='exact'?y===n:y.startsWith(n)){if(k++===m.n)return x.s;}}
+    for(const pass of['exact','prefix'])for(const x of words){if(x.s<from-.25||x.s>=to)continue;const ys=[norm(x.w),...(x.d?[norm(x.d)]:[])];   // forma hablada o escrita
+      if(ys.some(y=>pass==='exact'?y===n:y.startsWith(n))){if(k++===m.n)return x.s;}}
     throw new Error(`palabra "${m.__w}"${m.n?' #'+m.n:''} no encontrada después de ${from.toFixed(2)} s`);};
   let prev=0;const sc=raw.map((r,i)=>{let s;
     if(i===0)s=0;else if(typeof r.start==='number')s=r.start;else if(typeof r.start==='string')s=beatS(r.start)-.12;else if(r.start&&r.start.__w)s=findW(r.start,prev)-.12;
@@ -61,10 +63,10 @@ function build(WD){
     x.cap=p.cap!==undefined?p.cap:!NOCAP.has(x.type);
     if(x.type==='image'){const src=path.isAbsolute(p.src)?p.src:path.join(WD,p.src);if(!fs.existsSync(src))throw new Error('no existe la imagen '+src);p.url=fileURL(src);}
     const res=v=>v&&v.__w?+(findW(v,x.s,x.e+.3)-x.s).toFixed(3):Array.isArray(v)?v.map(res):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,y])=>[k,res(y)])):v;
-    x.p=res(p);x.words=words.filter(y=>y.s>=x.s-.05&&y.s<x.e).map(y=>({w:y.w,s:+(y.s-x.s).toFixed(3),e:+(y.e-x.s).toFixed(3)}));});
+    x.p=res(p);x.words=shown.filter(y=>y.s>=x.s-.05&&y.s<x.e).map(y=>({w:y.w,s:+(y.s-x.s).toFixed(3),e:+(y.e-x.s).toFixed(3)}));});
   // subtítulos: grupos de hasta 3 palabras (o ~18 caracteres); cortan en pausas y cambios de beat
   const KW=new Set((cfg.keywords||[]).map(norm));const caps=[];let g=null;
-  words.forEach((x,i)=>{const pv=words[i-1];
+  shown.forEach((x,i)=>{const pv=shown[i-1];
     if(!g||g.words.length>=3||g.words.map(y=>y.w).join(' ').length+x.w.length>18||x.s-pv.e>.35||x.beat!==pv.beat){if(g)caps.push(g);g={s:x.s,words:[]};}
     g.words.push({w:x.w,s:x.s,e:x.e,k:KW.has(norm(x.w))});});if(g)caps.push(g);
   caps.forEach((c,i)=>{c.e=+Math.min(caps[i+1]?caps[i+1].s:total,c.words[c.words.length-1].e+.45).toFixed(3);});
@@ -119,9 +121,14 @@ function review(tl,vo,WD){const w=[],err=[],S=tl.scenes;
     if(Object.keys(x.p).some(k=>/^(at|.*At|countEnd)$/.test(k)&&x.p[k]>D))w.push(`escena ${i}: un tiempo interno cae después del final de la escena`);});
   if(S[S.length-1].type!=='cta')w.push('la última escena no es un "cta"');
   const cc=S.filter(x=>x.type==='concept');
-  if(!cc.length)err.push('falta una escena "concept": ilustrar un concepto del guion con una animación sin texto (3–4 s), diseñada a medida en scenes.js');
+  // obligatoria salvo en videos cortos (< 30 s), donde puede no haber lugar: ahí es solo un aviso
+  if(!cc.length)(tl.total<30?w:err).push('falta una escena "concept": ilustrar un concepto del guion con una animación sin texto (3–4 s), diseñada a medida en scenes.js');
   // diseño a medida: el concepto nunca se recicla; 1–3 placas propias por video
   const defs=customDefs(tl.custom),hist=history(tl.brandSlug,WD);
+  if(cc.length){const idea=tl.look.concept_idea;
+    if(!idea||/^\(/.test(idea))w.push('look.json sin "concept_idea": describir en una línea qué cuenta el concept (queda en el historial para no repetir la idea)');
+    else{const sim=hist.filter(x=>x.idea).map(x=>({x,s:ideaSim(idea,x.idea)})).sort((a,b)=>b.s-a.s)[0];
+      if(sim&&sim.s>=.6)w.push(`la idea del concept se parece a la de ${sim.x.name} ("${sim.x.idea}"): buscar otra metáfora del guion`);}}
   const usedMot=new Map(hist.flatMap(x=>(x.motifs||[]).map(m=>[m.hash,x.name||x.work])));
   cc.forEach(x=>{const m=x.p.motif,d=defs.find(y=>y.kind==='MOT'&&y.name===m);
     if(!d)err.push(BUILTIN_MOT.has(m)?`el concept usa el motivo de biblioteca "${m}": los motivos del motor son solo referencia; diseñar un motivo nuevo para este guion en scenes.js`:`el concept usa el motivo "${m}", que no está definido en scenes.js`);

@@ -26,9 +26,18 @@ info "Instalando dependencias de Node..."; (cd "$SK/engine" && npm ci --silent) 
 if [ -n "$1" ]; then unzip -o -q "$1" -d "$SK/assets/sfx" && ok "Efectos de sonido del zip"
 elif ls "$HOME/.claude/skills/edicion/assets/sfx"/*/*.wav >/dev/null 2>&1; then ok "Efectos de sonido: se usan los de la skill edicion"
 else warn "Sin efectos de sonido (opcional): instalá la skill edicion o pasá la ruta a edicion-sfx.zip"; fi
+# marcas propias fuera del repo (~/.config/motion/brands): sobreviven a reinstalar y no se pisan entre copias
+UB="$HOME/.config/motion/brands"; mkdir -p "$UB"
+migrate_brands(){ for b in "$1"/brands/*/; do n="$(basename "$b")"; [ "$n" = editorial ] && continue; [ -f "$b/brand.json" ] || continue
+  if [ -e "$UB/$n" ]; then info "Marca $n ya está en $UB"; else cp -R "$b" "$UB/$n" && ok "Marca $n → $UB/$n"; fi; done; }
+migrate_brands "$SK"
 for d in "$HOME/.claude/skills" "$HOME/.codex/skills"; do
   mkdir -p "$d"
-  if [ -e "$d/motion" ] && [ ! -L "$d/motion" ]; then [ "$(cd "$d/motion" && pwd -P)" = "$(cd "$SK" && pwd -P)" ] && ok "Skill en $d/motion" || warn "$d/motion ya existe y no es un enlace: lo dejo como está"; continue; fi
+  if [ -e "$d/motion" ] && [ ! -L "$d/motion" ]; then
+    if [ "$(cd "$d/motion" && pwd -P)" = "$(cd "$SK" && pwd -P)" ]; then ok "Skill en $d/motion"; continue; fi
+    # una copia aparte se desincroniza del repo: guardar sus marcas, apartarla y enlazar
+    migrate_brands "$d/motion"; BK="$d/motion.bak-$(date +%Y%m%d-%H%M%S)"; mv "$d/motion" "$BK" && warn "Había una copia aparte de la skill: quedó en $BK (borrala cuando confirmes que todo anda)"
+  fi
   ln -sfn "$SK" "$d/motion" && ok "Skill enlazada en $d/motion"
 done
 echo; python3 -I "$SK/scripts/doctor.py"

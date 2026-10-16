@@ -61,7 +61,7 @@ if M.get('path'):
     r=subprocess.run(['ffmpeg','-nostats','-i',mp,'-af','ebur128','-f','null','-'],capture_output=True,text=True).stderr
     I=float(re.findall(r'I:\s+(-?[\d.]+) LUFS',r)[-1]);comp=-16-I
     md=fr(dur(mp));off=fr(M.get('offset',0));vs,ve,T=vo['beats'][0]['s'],vo['voice_end'],pm['total']
-    pts=[(0,M.get('intro',-8)),(max(.01,vs-.15),M.get('intro',-8)),(vs+.5,M.get('bed',-21)),(ve,M.get('bed',-21)),(ve+.7,M.get('outro',-10)),(max(ve+.8,T-1.6),M.get('outro',-10)),(T,-60)]
+    from mix import music_points;pts=music_points(vo,M,T,end=-60)   # misma curva que el MP4
     nm=('PREVIEW_' if (M.get('envato') or {}).get('status')=='preview' else '')+os.path.basename(mp)
     pos,cin=0,off
     while pos<TOT:   # si la música es más corta que el video, se repite

@@ -56,6 +56,7 @@ Lo genera `scripts/look.js new` (distinto de los videos anteriores de la marca) 
 | token | valores | qué cambia |
 |---|---|---|
 | `concepto` | texto | la idea visual del video, en una línea (va al LEEME) |
+| `concept_idea` | texto | qué cuenta el concept sin texto, en una línea; queda en el historial y `--plan` avisa si se parece a una idea anterior |
 | `palette` | `classic` · `dark` · `light` · `blocks` · `duo` · `accent2` | rotación de fondos cuando la escena no fija `bg` |
 | `hlPrefer` | `accent` · `accent2` | qué color resalta primero |
 | `hl` | `box` · `underline` · `marker` · `outline` · `pill` | estilo de `H()` |

@@ -49,7 +49,7 @@ function fit(L,tone){const T=TONE[tone];if(!T)return 0;let n=0;const fav=(k,v)=>
   for(const k of['motion','palette','hl','panel','frame','cam','captions'])if(fav(k,L[k]))n++;if(fav('radius',String(L.radius)))n++;
   if((L.decor||[]).some(d=>fav('decor',d)))n++;for(const [f,ts] of Object.entries(TRANS_FAM))if(fav('trans',f)&&ts.every(t=>L.transitions.includes(t)))n++;return n;}
 function readCfg(WD){const f=path.join(WD,'config.json');if(!fs.existsSync(f))throw new Error('falta '+f);return JSON.parse(fs.readFileSync(f,'utf8'));}
-function readBrand(slug){const f=path.join(path.isAbsolute(slug)?slug:path.join(SK,'brands',slug),'brand.json');return JSON.parse(fs.readFileSync(f,'utf8'));}
+function readBrand(slug){const f=path.join(D.brandDir(slug),'brand.json');return JSON.parse(fs.readFileSync(f,'utf8'));}
 
 function cmdNew(WD){const cfg=readCfg(WD),slug=cfg.brand||'editorial',brand=readBrand(slug),lock=(brand.design||{}).lock||{};
   const out=path.join(WD,'look.json');if(fs.existsSync(out)&&!process.argv.includes('--force'))throw new Error('ya existe look.json (editarlo, o --force para generar otro)');
@@ -57,7 +57,7 @@ function cmdNew(WD){const cfg=readCfg(WD),slug=cfg.brand||'editorial',brand=read
   // muchos candidatos coherentes → el más distinto de los últimos looks de la marca
   let best=null;for(let i=0;i<60;i++){const c={...candidate(r,tone,brand,last[last.length-1]),...lock};const s=last.length?Math.max(...last.map(x=>D.lookSim(c,x))):0;
     const sc=s-.08*fit(c,tone);if(!best||sc<best.sc)best={c,s,sc};}
-  const look={concepto:'(escribir en una línea la idea visual de este video)',tono:tone||null,seed,...best.c};
+  const look={concepto:'(escribir en una línea la idea visual de este video)',concept_idea:'(qué cuenta el concept sin texto, en una línea: "una onda va y vuelve entre dos burbujas")',tono:tone||null,seed,...best.c};
   fs.writeFileSync(out,JSON.stringify(look,null,1));
   console.log(`✓ ${out}${last.length?` (parecido máx. con los ${last.length} anteriores: ${Math.round(best.s*100)} %)`:''}`);show(look);
   console.log('→ ajustar a mano lo que haga falta según el guion, escribir "concepto" y mirar: node render.js <work> --look-preview');}
@@ -76,7 +76,7 @@ function cmdLog(WD){const cfg=readCfg(WD),slug=cfg.brand||'editorial',f=path.joi
   const look=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):{};const defs=D.customDefs(path.join(WD,'scenes.js'));
   const hf=D.historyFile(slug);fs.mkdirSync(D.LOOKS_DIR,{recursive:true});
   const all=fs.existsSync(hf)?JSON.parse(fs.readFileSync(hf,'utf8')).filter(x=>path.resolve(x.work||'')!==path.resolve(WD)):[];
-  all.push({name:cfg.name,work:path.resolve(WD),date:new Date().toISOString().slice(0,10),look,
+  all.push({name:cfg.name,work:path.resolve(WD),date:new Date().toISOString().slice(0,10),look,idea:look.concept_idea||null,
     motifs:defs.filter(d=>d.kind==='MOT').map(({name,hash})=>({name,hash})),scenes:defs.filter(d=>d.kind==='SC').map(({name,hash})=>({name,hash}))});
   fs.writeFileSync(hf,JSON.stringify(all,null,1));console.log(`✓ look de ${cfg.name} guardado en ${hf} (${all.length} videos de la marca)`);}
 

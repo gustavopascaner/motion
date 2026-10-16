@@ -36,4 +36,9 @@ sd=[os.path.join(SK,'assets','sfx')]+[os.path.expanduser(f'~/{d}/skills/edicion/
 n,where=next(((len(glob.glob(os.path.join(d,'*','*.wav'))),d) for d in sd if glob.glob(os.path.join(d,'*','*.wav'))),(0,''))
 row(n>0,'Efectos de sonido',f'{n} archivos ({where})' if n else 'no hay (opcional: instalar la skill edicion o edicion-sfx.zip)',opt=True)
 ng=len(glob.glob(os.path.expanduser('~/.config/motion/sfx/*/*.wav')));row(ng>0,'SFX generados (ElevenLabs)',f'{ng} en ~/.config/motion/sfx' if ng else 'ninguno todavía (sfx.py gen)',opt=True)
+for d in('.claude','.codex'):   # la skill instalada tiene que ser un enlace a esta carpeta (una copia aparte se desincroniza)
+    p=os.path.expanduser(f'~/{d}/skills/motion')
+    if os.path.exists(p): same=os.path.realpath(p)==os.path.realpath(SK);row(same,f'Skill en ~/{d}',('enlazada a '+SK) if same else f'{p} es otra copia (no un enlace a {SK})','deps',opt=True)
+ob=[x for x in os.listdir(os.path.join(SK,'brands')) if x!='editorial' and os.path.exists(os.path.join(SK,'brands',x,'brand.json'))] if os.path.isdir(os.path.join(SK,'brands')) else []
+if ob: row(False,'Marcas propias',f"{', '.join(ob)} dentro de la skill: moverlas a ~/.config/motion/brands",'deps',opt=True)
 print('\n'.join(rows));print('\nTodo listo ✓' if not bad else f'\nFaltan {bad} cosa(s): correr los comandos indicados.');sys.exit(1 if bad else 0)
