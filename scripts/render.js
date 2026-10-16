@@ -3,7 +3,9 @@
 //      node render.js <work> --test [--at=end]     → un cuadro por escena → <work>/test/*.jpg + hoja <work>/sheet.jpg
 //      node render.js <work> [--par=6]             → <work>/video.mp4 (después: mix.py)
 //      node render.js <work> --premiere [--only=3,5|caps|overlay] → capas .mov en <out_dir>/Assets (después: build_xml.py)
+//      node render.js <work> --look-preview        → muestra del look del video (6 placas) → <work>/look.jpg
 //      node render.js --brand-preview=<marca> --out=<png> [--format=9:16]   → muestra de la marca (4 escenas)
+// Diseño por video: <work>/look.json (dirección de arte, ver scripts/look.js) y <work>/scenes.js (placas y conceptos a medida, se inyecta en el motor).
 const fs=require('fs'),path=require('path'),os=require('os'),{spawn,spawnSync}=require('child_process');
 const SK=path.join(__dirname,'..'),ENG=path.join(SK,'engine');
 const puppeteer=require(path.join(ENG,'node_modules','puppeteer-core'));
@@ -19,6 +21,11 @@ function loadBrand(slug){const dir=path.isAbsolute(slug)?slug:path.join(SK,'bran
     if(!fs.existsSync(p))throw new Error(`Falta la tipografía ${p}: correr brand.py setup ${slug}`);x.url=fileURL(p);}
   if(b.logo){const p=path.isAbsolute(b.logo)?b.logo:path.join(dir,b.logo);if(fs.existsSync(p))b.logoURL=fileURL(p);else console.warn('⚠️  no encuentro el logo',p);}
   return b;}
+
+// ───── look (dirección de arte del video) y diseño a medida: ver scripts/design.js ─────
+const {PAL,loadLook,customDefs,history,lookSim}=require('./design.js');
+const ENG_SRC=fs.readFileSync(path.join(ENG,'engine.html'),'utf8');
+const BUILTIN_SC=new Set([...ENG_SRC.matchAll(/^SC\.(\w+)=/gm)].map(m=>m[1])),BUILTIN_MOT=new Set([...ENG_SRC.matchAll(/^MOT\.(\w+)=/gm)].map(m=>m[1]));
 
 // ───── SFX (librería compartida con la skill edicion) ─────
 function sfxDir(){const c=[path.join(SK,'assets','sfx'),...['.claude','.codex'].map(d=>path.join(os.homedir(),d,'skills','edicion','assets','sfx'))];
@@ -45,11 +52,12 @@ function build(WD){
     if(i===0)s=0;else if(typeof r.start==='number')s=r.start;else if(typeof r.start==='string')s=beatS(r.start)-.12;else if(r.start&&r.start.__w)s=findW(r.start,prev)-.12;
     else throw new Error(`escena ${i} (${r.type}): inicio inválido`);prev=s;return {...r,s:+s.toFixed(3)};});
   for(let i=1;i<sc.length;i++)if(sc[i].s<=sc[i-1].s+.3)throw new Error(`escena ${i} (${sc[i].type}) empieza antes o casi junto con la anterior (${sc[i].s} s)`);
-  const ROT=['dark','light','dark','accent'],TRS=['wipe','slide','circle','push','zoom'];let ti=0;
+  const look=loadLook(WD,brand),custom=fs.existsSync(path.join(WD,'scenes.js'))?path.join(WD,'scenes.js'):null;
+  const ROT=(PAL[look.palette]||PAL.classic).filter(k=>brand.colors[k]),TRS=look.transitions&&look.transitions.length?look.transitions:['wipe','slide','circle','push','zoom'];let ti=0;
   const NOCAP=new Set(['kinetic','quote']);
   sc.forEach((x,i)=>{x.e=i<sc.length-1?sc[i+1].s:total;x.i=i;const p=x.p;
     x.bg=p.bg||(x.type==='image'?'dark':ROT[i%ROT.length]);
-    x.tr=i===0?(p.tr||'cut'):p.tr||(()=>{let t;do{t=TRS[ti++%TRS.length]}while(t===sc[i-1].tr);return t;})();
+    x.tr=i===0?(p.tr||'cut'):p.tr||(()=>{if(TRS.length<2)return TRS[0];let t;do{t=TRS[ti++%TRS.length]}while(t===sc[i-1].tr);return t;})();
     x.cap=p.cap!==undefined?p.cap:!NOCAP.has(x.type);
     if(x.type==='image'){const src=path.isAbsolute(p.src)?p.src:path.join(WD,p.src);if(!fs.existsSync(src))throw new Error('no existe la imagen '+src);p.url=fileURL(src);}
     const res=v=>v&&v.__w?+(findW(v,x.s,x.e+.3)-x.s).toFixed(3):Array.isArray(v)?v.map(res):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,y])=>[k,res(y)])):v;
@@ -93,14 +101,14 @@ function build(WD){
     sfx.push({id,file,start:+start.toFixed(3),sin:+sin.toFixed(3),dur:+Math.min(e.o.dur||m.dur,m.dur-sin).toFixed(3),gain:+(e.o.gain??CAT.categories[m.cat].gain*(m.gain_adj||1)).toFixed(3),at:+e.t.toFixed(3),auto:!e.manual});}
   if(missing.size)console.warn('⚠️  Faltan sonidos de la librería (se omiten):',[...missing].join(', '));
   const scenes=sc.map(x=>({type:x.type,s:x.s,e:x.e,bg:x.bg,tr:x.tr,cap:x.cap,p:x.p,words:x.words}));
-  const tl={W,H,fps:FPS,total,brand,scenes,caps,capsOn,logoCorner:cfg.logo_corner};
+  const tl={W,H,fps:FPS,total,brand,scenes,caps,capsOn,logoCorner:cfg.logo_corner,look,custom,brandSlug:cfg.brand||'editorial',hasLook:fs.existsSync(path.join(WD,'look.json'))};
   fs.writeFileSync(path.join(WD,'timeline.json'),JSON.stringify(tl,null,1));
   fs.writeFileSync(path.join(WD,'sfx.json'),JSON.stringify(sfx,null,1));
   fs.writeFileSync(path.join(WD,'captions.json'),JSON.stringify(caps,null,1));
   return {cfg,tl,sfx,vo};}
 
 // ───── revisión de dirección ─────
-function review(tl,vo){const w=[],S=tl.scenes;
+function review(tl,vo,WD){const w=[],err=[],S=tl.scenes;
   S.forEach((x,i)=>{const D=x.e-x.s,ats=JSON.stringify(x.p).match(/"(at|[a-z]+At|countEnd)":\s*[\d.]+/g)||[];
     const lastAt=Math.max(0,...ats.map(a=>+a.split(':')[1]));
     if(D<1.3)w.push(`escena ${i} (${x.type}) dura ${D.toFixed(1)} s: muy rápida, unirla con la vecina`);
@@ -111,24 +119,43 @@ function review(tl,vo){const w=[],S=tl.scenes;
     if(Object.keys(x.p).some(k=>/^(at|.*At|countEnd)$/.test(k)&&x.p[k]>D))w.push(`escena ${i}: un tiempo interno cae después del final de la escena`);});
   if(S[S.length-1].type!=='cta')w.push('la última escena no es un "cta"');
   const cc=S.filter(x=>x.type==='concept');
-  if(!cc.length)w.push('falta una escena "concept": ilustrar un concepto del guion con una animación sin texto (3–4 s)');
+  if(!cc.length)err.push('falta una escena "concept": ilustrar un concepto del guion con una animación sin texto (3–4 s), diseñada a medida en scenes.js');
+  // diseño a medida: el concepto nunca se recicla; 1–3 placas propias por video
+  const defs=customDefs(tl.custom),hist=history(tl.brandSlug,WD);
+  const usedMot=new Map(hist.flatMap(x=>(x.motifs||[]).map(m=>[m.hash,x.name||x.work])));
+  cc.forEach(x=>{const m=x.p.motif,d=defs.find(y=>y.kind==='MOT'&&y.name===m);
+    if(!d)err.push(BUILTIN_MOT.has(m)?`el concept usa el motivo de biblioteca "${m}": los motivos del motor son solo referencia; diseñar un motivo nuevo para este guion en scenes.js`:`el concept usa el motivo "${m}", que no está definido en scenes.js`);
+    else if(BUILTIN_MOT.has(m))err.push(`scenes.js redefine el motivo de biblioteca "${m}": ponerle un nombre propio y diseñarlo desde cero`);
+    else if(usedMot.has(d.hash))err.push(`el motivo "${m}" es idéntico al usado en ${usedMot.get(d.hash)}: el concept tiene que ser nuevo en cada video`);});
+  const own=[...new Set(S.map(x=>x.type).filter(t=>!BUILTIN_SC.has(t)))];
+  if(!own.length)w.push('ninguna placa a medida: diseñar 1–3 escenas propias del guion en scenes.js (SC.nombre)');
+  if(own.length>3)w.push(`${own.length} tipos de placa a medida: con 1–3 alcanza (el resto, variantes del catálogo)`);
+  if(!tl.hasLook)w.push('sin look.json: el video sale con el diseño clásico; correr scripts/look.js new');
+  else{const last=hist.slice(-3);const sim=last.map(x=>({x,s:lookSim(tl.look,x.look||{})})).sort((a,b)=>b.s-a.s)[0];
+    if(sim&&sim.s>=.7)w.push(`el look se parece ${Math.round(sim.s*100)} % al de ${sim.x.name||'un video anterior'}: cambiar decorado, paneles, resaltado o movimiento`);}
+  const vc={};S.forEach(x=>{if(!BUILTIN_SC.has(x.type))return;const k=x.type+':'+(x.p.v||(tl.look.variants||{})[x.type]||'default');vc[k]=(vc[k]||0)+1;});
+  for(const [k,n] of Object.entries(vc))if(n>=3)w.push(`"${k.replace(':','" con variante "')}" aparece ${n} veces: alternar variantes (v)`);
   cc.forEach(x=>{const D=x.e-x.s;if(D<2.5||D>4.8)w.push(`la escena concept (${x.p.motif}) dura ${D.toFixed(1)} s: tiene que durar 3–4 s`);
     if(x.p.kick&&x.p.kick.length>24)w.push('la escena concept no debería tener texto (como mucho un kick muy corto)');});
   if(S[0].e>4)w.push(`el gancho dura ${S[0].e.toFixed(1)} s: el primer cambio de imagen tendría que llegar antes de los 3–4 s`);
   const n=S.length,T=tl.total;if(T/n>5.5)w.push(`${n} escenas en ${T.toFixed(0)} s (una cada ${(T/n).toFixed(1)} s): sumar escenas, el ritmo ideal es una cada 3–5 s`);
-  return w;}
+  return {w,err};}
 
 function plan(WD){const {tl,sfx,vo}=build(WD);
   console.log(`Formato ${tl.W}×${tl.H} · duración ${tl.total.toFixed(1)} s · ${tl.scenes.length} escenas · subtítulos ${tl.capsOn?'sí':'no'}`);
-  tl.scenes.forEach((x,i)=>console.log(`${String(i).padStart(2)} ${x.type.padEnd(9)} ${x.s.toFixed(2).padStart(6)}–${x.e.toFixed(2).padStart(6)} (${(x.e-x.s).toFixed(1)} s)  bg ${x.bg.padEnd(7)} tr ${x.tr.padEnd(6)}${x.cap?'':' sin subt.'}  ${(x.p.lines||[x.p.kick||x.p.text||x.p.word||x.p.title||''])[0].toString().replace(/<[^>]+>/g,'').slice(0,40)}`));
+  if(tl.hasLook)console.log(`Look: ${tl.look.concepto||'(sin concepto)'} · decor ${(tl.look.decor||[]).map(d=>d.k||d).join('+')||'-'} · hl ${tl.look.hl||'box'} · panel ${tl.look.panel||'soft'} · movimiento ${tl.look.motion||'classic'}`);
+  tl.scenes.forEach((x,i)=>console.log(`${String(i).padStart(2)} ${x.type.padEnd(9)} ${x.s.toFixed(2).padStart(6)}–${x.e.toFixed(2).padStart(6)} (${(x.e-x.s).toFixed(1)} s)  bg ${x.bg.padEnd(7)} tr ${x.tr.padEnd(6)} v ${String(x.p.v||(tl.look.variants||{})[x.type]||(BUILTIN_SC.has(x.type)?'-':'a medida')).padEnd(8)}${x.cap?'':' sin subt.'}  ${(x.p.lines||[x.p.kick||x.p.text||x.p.word||x.p.title||''])[0].toString().replace(/<[^>]+>/g,'').slice(0,40)}`));
   console.log('SFX:\n'+(sfx.map(x=>`  ${x.at.toFixed(2).padStart(6)}  ${x.id.padEnd(16)} gain ${x.gain}${x.auto?'  (auto)':''}`).join('\n')||'  (ninguno)'));
-  const w=review(tl,vo);console.log(w.length?'\nDirección:\n'+w.map(x=>'⚠️  '+x).join('\n'):'\nDirección: ✓ sin avisos');}
+  const {w,err}=review(tl,vo,WD);console.log(w.length||err.length?'\nDirección:\n'+[...err.map(x=>'✗  '+x),...w.map(x=>'⚠️  '+x)].join('\n'):'\nDirección: ✓ sin avisos');}
+// el render final se frena si hay errores de dirección (concept reciclado o faltante); --force lo saltea
+function gate(tl,WD){if(process.argv.includes('--force'))return;const {err}=review(tl,null,WD);if(err.length)throw new Error('Dirección:\n'+err.map(x=>'  ✗ '+x).join('\n')+'\n(corregir, o --force)');}
 
 async function withPages(tl,n,fn){if(!CHROME)throw new Error('No encuentro Chrome. Instalalo o definí CHROME=/ruta');
   const br=await puppeteer.launch({executablePath:CHROME,headless:true,protocolTimeout:0,args:['--allow-file-access-from-files','--force-device-scale-factor=1','--hide-scrollbars','--disable-web-security']});
   try{return await Promise.all(Array.from({length:n},async(_,k)=>{const pg=await br.newPage();await pg.setViewport({width:tl.W,height:tl.H,deviceScaleFactor:1});
     pg.on('console',m=>{if(m.type()==='warning'||m.type()==='error')console.warn('  [engine]',m.text());});
-    await pg.goto(fileURL(path.join(ENG,'engine.html')));const fits=await pg.evaluate(c=>init(c),tl);const r=await fn(pg,k,fits);await pg.close();return r;}));}
+    pg.on('pageerror',e=>console.warn('  [engine] error:',e.message));
+    await pg.goto(fileURL(path.join(ENG,'engine.html')));if(tl.custom)await pg.addScriptTag({path:tl.custom});const fits=await pg.evaluate(c=>init(c),tl);const r=await fn(pg,k,fits);await pg.close();return r;}));}
   finally{await br.close();}}
 
 async function test(WD){const {tl}=build(WD);const dir=path.join(WD,'test');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});
@@ -141,7 +168,7 @@ async function test(WD){const {tl}=build(WD);const dir=path.join(WD,'test');fs.r
   const out=path.join(WD,'sheet.jpg');spawnSync('ffmpeg',['-v','error','-y','-f','concat','-safe','0','-i',list,'-vf',`scale=${sw}:-2,tile=${cols}x${Math.ceil(files.length/cols)}:padding=6:color=0x222222`,'-frames:v','1','-update','1',out]);
   console.log('hoja:',out,`(${files.length} cuadros, en orden de escena)`);}
 
-async function full(WD){const t0=Date.now();const {tl}=build(WD);const par=+(arg('par')||Math.min(6,Math.max(2,os.cpus().length-2)));
+async function full(WD){const t0=Date.now();const {tl}=build(WD);gate(tl,WD);const par=+(arg('par')||Math.min(6,Math.max(2,os.cpus().length-2)));
   const nf=Math.ceil(tl.total*tl.fps),per=Math.ceil(nf/par),dir=path.join(WD,'chunks');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});
   let done=0;const tick=setInterval(()=>process.stdout.write(`\r  ${done}/${nf} cuadros`),2000);
   await withPages(tl,par,async(pg,k)=>{const a=k*per,b=Math.min(nf,a+per);if(a>=b)return;
@@ -158,8 +185,8 @@ async function full(WD){const t0=Date.now();const {tl}=build(WD);const par=+(arg
   const secs=(Date.now()-t0)/1000;console.log(`\n✓ ${out} (${nf} cuadros en ${secs.toFixed(0)} s)`);logTime(WD,'Render de video',secs);}
 
 // ───── capas para Premiere: una .mov por escena (opaca, con su transición de entrada ya compuesta), subtítulos con alfa por escena y overlay ─────
-const TRD={wipe:.5,slide:.55,circle:.6,zoom:.55,push:.55,cut:0};
-async function premiere(WD){const t0=Date.now();const {cfg,tl}=build(WD);const F=tl.fps,A=path.join(cfg.out_dir,'Assets');
+const TRD={wipe:.5,slide:.55,circle:.6,zoom:.55,push:.55,cut:0,wipex:.5,split:.55,diag:.55,shape:.65,blinds:.6};
+async function premiere(WD){const t0=Date.now();const {cfg,tl}=build(WD);gate(tl,WD);const F=tl.fps,A=path.join(cfg.out_dir,'Assets');
   const only=arg('only')?new Set(arg('only').split(',').map(x=>isNaN(x)?x:+x)):null;const S=tl.scenes,jobs=[];
   const pad=n=>String(n).padStart(2,'0'),fr=t=>Math.round(t*F);
   S.forEach((x,i)=>{const nx=S[i+1],b=nx?nx.s:tl.total,f0=fr(x.s);
@@ -184,6 +211,23 @@ async function premiere(WD){const t0=Date.now();const {cfg,tl}=build(WD);const F
     clips:jobs.filter(j=>j.n>0).map(({opt,...j})=>({...j,label:j.kind==='scene'?`${j.name} · ${String((S[j.i].p.lines||[S[j.i].p.kick||S[j.i].p.text||S[j.i].p.word||''])[0]).replace(/<[^>]+>/g,'').slice(0,40)}`:j.name}))},null,1));
   const secs=(Date.now()-t0)/1000;console.log(`\n✓ ${todo.length} clips en ${A} (${secs.toFixed(0)} s) → ahora: build_xml.py`);logTime(WD,'Render de capas para Premiere',secs);}
 
+async function lookPreview(WD){const cfg=JSON.parse(fs.readFileSync(path.join(WD,'config.json'),'utf8'));const [W,H]=FORMATS[cfg.format||'9:16'];
+  const brand=loadBrand(cfg.brand||'editorial'),look=loadLook(WD,brand),custom=fs.existsSync(path.join(WD,'scenes.js'))?path.join(WD,'scenes.js'):null;
+  const ROT=(PAL[look.palette]||PAL.classic).filter(k=>brand.colors[k]);
+  const sc=[{type:'title',p:{kick:'EL TEMA',lines:['UN TÍTULO','CON <span class="hlb">ESTILO</span>'],sub:'y un acento'}},
+    {type:'stat',p:{kick:'DATO',value:73,suffix:'%',label:'DE LOS PACIENTES',sub:'Fuente: ejemplo'}},
+    {type:'list',p:{kick:'PASOS',title:'CÓMO EMPEZAR',items:[{t:'Definí tu objetivo',mark:'check'},{t:'Medí lo que hacés',mark:'check'},{t:'Repetí lo que funciona',mark:'check'}]}},
+    {type:'compare',p:{kick:'LA DIFERENCIA',left:{title:'ANTES',items:[{t:'Una receta'}]},right:{title:'AHORA',items:[{t:'Alguien que te cuida'}]}}},
+    {type:'bigword',p:{kick:'REMATE',lines:['VUELVE']}},
+    {type:'cta',p:{kick:'¿TE SIRVIÓ?',lines:['SEGUIME'],btnAt:.5}}];
+  const N=sc.length,tl={W,H,fps:30,total:N*3,brand,look,custom,capsOn:(brand.captions||{}).on!==false&&cfg.captions!==false,caps:[],
+    scenes:sc.map((x,i)=>({...x,bg:ROT[i%ROT.length],s:i*3,e:i*3+3,tr:'cut',cap:true,words:[]}))};
+  tl.caps=sc.map((x,i)=>({s:i*3,e:i*3+3,words:'así se ven los subtítulos'.split(' ').map((w,k)=>({w,s:i*3+k*.2,e:i*3+k*.2+.2,k:k===3}))}));
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'lp')),out=path.join(WD,'look.jpg');
+  await withPages(tl,1,async pg=>{for(let i=0;i<N;i++){await pg.evaluate(t=>frame(t),i*3+2.9);await pg.screenshot({path:path.join(dir,`${i}.jpg`),type:'jpeg',quality:85});}});
+  spawnSync('ffmpeg',['-v','error','-y','-i',path.join(dir,'%d.jpg'),'-vf',`scale=${W>H?640:360}:-2,tile=${W>H?3:6}x${W>H?2:1}:padding=8:color=0x222222`,'-frames:v','1','-update','1',out]);
+  fs.rmSync(dir,{recursive:true,force:true});console.log('look:',out);}
+
 async function brandPreview(slug,out,fmt){const [W,H]=FORMATS[fmt||'9:16'];const brand=loadBrand(slug);
   const sc=[{type:'title',bg:'dark',p:{kick:'TU MARCA',lines:['TÍTULO','CON <span class="hlb">ESTILO</span>'],sub:'y un acento elegante'}},
     {type:'stat',bg:'light',p:{kick:'DATO',value:73,suffix:'%',label:'DE TUS CLIENTES',sub:'Fuente: ejemplo'}},
@@ -198,4 +242,5 @@ async function brandPreview(slug,out,fmt){const [W,H]=FORMATS[fmt||'9:16'];const
 
 (async()=>{const bp=arg('brand-preview');if(bp)return brandPreview(bp,arg('out')||path.join(process.cwd(),`marca_${path.basename(bp)}.jpg`),arg('format'));
   const WD=path.resolve(process.argv[2]);
+  if(process.argv.includes('--look-preview'))return lookPreview(WD);
   if(process.argv.includes('--plan'))plan(WD);else if(process.argv.includes('--premiere'))await premiere(WD);else if(process.argv.includes('--test'))await test(WD);else await full(WD);})().catch(e=>{console.error('✗',e.message);process.exit(1);});

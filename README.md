@@ -4,8 +4,9 @@ Skill para **Claude Code** y **Codex** (macOS y Windows). Le das un **guion** y 
 
 - **Preguntas al empezar**: voz (mujer/hombre, **argentina por defecto**) y marca. La **música la elige Claude según el guion** (o usa la tuya si se la pasás) y el formato es siempre **vertical 9:16**, salvo que pidas otro (1:1, 4:5 o 16:9). Si la marca es nueva, pregunta logo, colores y tipografías, muestra una vista previa y la **guarda** para los próximos videos.
 - **Locución IA** con tiempos por palabra: ElevenLabs (más natural, voces rioplatenses o tu voz clonada; con tu clave) o edge-tts gratis (`es-AR-ElenaNeural` / `es-AR-TomasNeural`, y otros acentos). La voz elegida queda guardada en la marca.
-- **Motion graphics** a pantalla completa con la marca: 15 escenas (título, texto cinético, palabra gigante, pregunta, dato que cuenta, anillo, barras, lista, pasos, íconos, comparación, cita, chat, foto, CTA) y transiciones, todo **sincronizado con la voz**.
-- **Un motion graphic conceptual sin texto** (3–4 s) en cada video: Claude elige la idea del guion que mejor se entiende como imagen y la anima con formas, líneas y partículas (14 motivos: crecimiento, red, ciclo, embudo, foco, equilibrio, romper barreras, orden, latido, camino, atracción, diálogo, bifurcación, acumulación).
+- **Motion graphics** a pantalla completa con la marca: 15 escenas con 2–4 variantes de layout cada una (título, texto cinético, palabra gigante, pregunta, dato que cuenta, anillo, barras, lista, pasos, íconos, comparación, cita, chat, foto, CTA) y transiciones, todo **sincronizado con la voz**.
+- **Un diseño nuevo en cada video**, aunque sea la misma marca: cada video tiene su propia dirección de arte (`look.json`: uso del color, resaltados, paneles, decorados, marcos, composición, movimiento, transiciones y una variante por placa), generada lejos de los looks anteriores de la marca. Tipografías, colores y logo se respetan siempre.
+- **Un motion graphic conceptual sin texto** (3–4 s) **diseñado desde cero para cada guion** (nunca reciclado: el render se frena si se repite), más 1–3 placas a medida (`scenes.js`).
 - **Subtítulos dinámicos** con la palabra activa resaltada (y `.srt` aparte).
 - **Música de Envato** con volumen automático (fuerte al inicio, baja bajo la voz, sube al cierre) y **SFX sutiles**: los genéricos salen de la librería de la skill [edicion](https://github.com/gustavopascaner/edicion) y los específicos (notificación, latido, tipeo…) se generan con ElevenLabs una sola vez y quedan en tu biblioteca local (`scripts/sfx.py`).
 - **Dirección**: avisa si el ritmo, la variedad o el gancho no están bien, y arma hojas de prueba antes del render.
@@ -57,6 +58,7 @@ La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos 
 | `scripts/envato.py` | Búsqueda de música en Envato y reemplazo por la licenciada |
 | `engine/engine.html` | Motor de escenas (HTML/CSS/JS) |
 | `brands/` | Marcas guardadas (las propias no se suben al repo; `editorial` es la de ejemplo) |
+| `scripts/look.js`, `scripts/design.js` | Dirección de arte por video e historial de looks por marca |
 | `reference/` | Catálogo de escenas y un ejemplo completo |
 
 Tipografías de `brands/editorial/fonts` y las que baja `brand.py`: Google Fonts (SIL Open Font License). La música de Envato se **licencia y descarga automáticamente, sin preguntar**, desde tu sesión de Envato en el navegador de la app de Claude: iniciás sesión vos una sola vez (Claude nunca usa tu contraseña) y en cada video se reemplaza la vista previa por el WAV original, sin marca de agua. Si no hay sesión o falla la descarga, el video se entrega igual con la vista previa y te avisa.

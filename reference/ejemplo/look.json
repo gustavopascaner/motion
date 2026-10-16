@@ -1,0 +1,45 @@
+{
+ "concepto": "Revista de datos: bloques de color plenos, números gigantes de fondo, cortes secos y movimiento rápido",
+ "tono": "energico",
+ "seed": 11,
+ "palette": "blocks",
+ "hlPrefer": "accent",
+ "align": "left",
+ "valign": "top",
+ "frame": "column",
+ "scale": 1.1,
+ "kick": "dot",
+ "kickFont": "mono",
+ "hl": "pill",
+ "panel": "solid",
+ "radius": 36,
+ "decor": [
+  "glyph",
+  "grid",
+  "grain"
+ ],
+ "motion": "snappy",
+ "cam": "zoom",
+ "transitions": [
+  "diag",
+  "blinds",
+  "wipex",
+  "wipe"
+ ],
+ "captions": "underline",
+ "variants": {
+  "title": "offset",
+  "kinetic": "light",
+  "bigword": "echo",
+  "stat": "split",
+  "list": "bignum",
+  "steps": "line",
+  "compare": "panels",
+  "quote": "bar",
+  "bars": "bars",
+  "donut": "ring",
+  "icons": "rows",
+  "question": "mark",
+  "cta": "button"
+ }
+}

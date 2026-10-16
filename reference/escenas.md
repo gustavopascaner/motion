@@ -3,7 +3,8 @@
 Todas son a pantalla completa. Tamaños nominales para un ancho de 1080 px: el contenido se escala solo para entrar en el área segura de cada formato.
 Colores por escena con `bg`: `dark` · `light` · `accent` · `accent2`. El motor elige solo el color del texto (`--fg`), el de resaltado (`--hl`) y el texto sobre resaltado (`--hlfg`) con buen contraste.
 Tiempos internos (`at`, `*At`, `countEnd`) en **segundos locales**; escribirlos con `w('palabra')` para sincronizarlos con la voz.
-Comunes: `bg`, `tr`, `cap`, `sfx`, `valign` (`'top'|'center'|'bottom'`), `maxScale`, `logo:false`, `grid:false`, `shapes:false`.
+Comunes: `bg`, `tr`, `cap`, `sfx`, `v` (variante de layout), `align` (`'left'|'center'|'right'`), `valign` (`'top'|'center'|'bottom'`), `maxScale`, `logo:false`, `grid:false`, `shapes:false`, `decor` (decorado propio de la escena: `'sun'` o `['orbit',{k:'stripes',o:.8}]`; `false` = sin decorado), `frame` (`false` o un marco).
+Transiciones (`tr`): `wipe` · `wipex` · `slide` · `push` · `circle` · `zoom` · `split` · `diag` · `shape` · `blinds` · `cut`.
 Clases dentro de textos: `H('x')` caja resaltada · `A('x')` color de acento · `<span class="acc">x</span>` tipografía de acento · `<br>`.
 
 | escena | params | para qué |
@@ -25,6 +26,23 @@ Clases dentro de textos: `H('x')` caja resaltada · `A('x')` color de acento · 
 | `concept` | `motif, at (momento clave = w('palabra')), seed?, n?` — **sin texto** | animación conceptual de 3–4 s con formas, líneas y partículas (obligatoria: una por video) |
 | `cta` | `kick, lines, handle (solo si el usuario lo pide explícitamente; nunca inventarlo ni sacarlo de la marca), action:'follow'\|'comment'\|'save'\|'link'\|'dm', btnAt, word (comment), btn, done, logo:false` | cierre: logo + llamado + botón que se aprieta |
 
+**Variantes (`v`)** — la primera es el diseño clásico; si se omite, usa la de `look.variants`:
+| escena | variantes |
+|---|---|
+| `title` | `stack` · `offset` (líneas escalonadas, alternan color) · `framed` (dentro de un marco que se dibuja) |
+| `kinetic` | `rise` · `pop` (cada palabra aparece escalando) · `light` (la frase entera tenue, se enciende palabra por palabra) |
+| `bigword` | `letters` · `outline` (contorno que se llena) · `echo` (la última línea repetida en contornos) |
+| `stat` | `bar` · `giant` (número enorme, sin barra) · `ring` (número dentro de un anillo que se completa) · `split` (número \| etiqueta) |
+| `list` | `rows` · `cards` (cada ítem en panel) · `bignum` (01/02/03 grandes con filetes) |
+| `steps` | `line` · `cards` (tarjetas con flechas) |
+| `compare` | `panels` · `strike` (lo viejo tachado, lo nuevo en color) · `split` (bloques con "VS") |
+| `quote` | `mark` · `bar` (filete vertical) |
+| `bars` | `bars` · `columns` (columnas verticales) |
+| `donut` | `ring` · `dots` (100 puntos que se llenan) |
+| `icons` | `tiles` · `rows` |
+| `question` | `mark` · `inline` (signo en contorno + filete) · `bubble` (globo de diálogo) |
+| `cta` | `button` · `card` (todo dentro de un panel) |
+
 Íconos (`mark`, `icon`): user, users, heart, clock, chat, star, chart, trend, phone, calendar, money, check, x, bolt, search, target, lock, idea, home, mail, play, shield, rocket, gift, pin, camera, med, eye, globe, smile, alert, bookmark, send, arrow, plus.
 
 ## Subtítulos
@@ -33,14 +51,38 @@ Automáticos desde `words.json` (grupos de hasta 3 palabras, palabra activa en c
 ## SFX automáticos
 Entrada de escena con transición → whoosh suave (sin graves) · `bigword` → solo su transición (sin golpes: prohibidos los 'boom') · `stat`/`donut` → ding al terminar de contar · ítems → pop/ding · CTA → click. Se eligen los más importantes, separados, hasta `config.sfx_max` (6). Manual: `sfx` en la escena (`[['id', w('palabra')]]`) o `X('categoría|id', w('palabra') | segundo)` en story.js. Sonidos literales que no estén en la biblioteca: generarlos con `sfx.py gen` (ElevenLabs) — ver SKILL.md 4b.
 
+## Look del video (`<work>/look.json`)
+Lo genera `scripts/look.js new` (distinto de los videos anteriores de la marca) y se ajusta a mano. Tipografía, colores y logo siempre vienen de la marca; `brand.json` → `"design":{"lock":{…}}` fija tokens (mismas claves). Sin `look.json` el motor usa el diseño clásico.
+| token | valores | qué cambia |
+|---|---|---|
+| `concepto` | texto | la idea visual del video, en una línea (va al LEEME) |
+| `palette` | `classic` · `dark` · `light` · `blocks` · `duo` · `accent2` | rotación de fondos cuando la escena no fija `bg` |
+| `hlPrefer` | `accent` · `accent2` | qué color resalta primero |
+| `hl` | `box` · `underline` · `marker` · `outline` · `pill` | estilo de `H()` |
+| `kick` / `kickFont` | `dot` · `line` · `number` · `bracket` · `tag` · `plain` / `mono` · `accent` · `body` | antetítulos |
+| `panel` / `radius` | `soft` · `outline` · `solid` · `offset` · `flat` / px | paneles de compare, icons, list/steps `cards`, cta `card` |
+| `decor` | lista: `blobs` `rings` `dots` `stripes` `halftone` `glyph` `orbit` `lines` `gradient` `sun` + `grid` `grain` (o `{k, o:intensidad}`) | fondo de cada escena |
+| `frame` | `none` · `border` · `corners` · `column` | marco fijo |
+| `align` / `valign` / `scale` | `left` `center` `right` `mixed` / `top` `center` `bottom` / 0.85–1.2 | composición y tamaño |
+| `motion` / `cam` | `snappy` · `smooth` · `bouncy` / `zoom` · `pull` · `drift` · `none` | ritmo y curvas de animación, movimiento de cámara |
+| `transitions` | lista de transiciones | familia de transiciones que rota |
+| `captions` | `color` · `box` · `underline` | palabra activa de los subtítulos |
+| `variants` | `{tipo: variante}` | variante por defecto de cada placa |
+
+## Diseño a medida (`<work>/scenes.js`)
+Se inyecta en el motor antes de armar el video (solo para ese video). Cada definición empieza al principio de una línea:
+- `MOT.nombre=(g,p,a,D,r)=>{…; return t=>{…}}` — **el concept de cada video, siempre nuevo** (ver "Motivos de referencia" abajo para el patrón). `render.js` lo firma (hash sin comentarios ni espacios) y frena si coincide con uno ya usado en la marca o si el concept usa un motivo de la biblioteca.
+- `SC.nombre=(p,c)=>{…; return t=>{…}}` — placas propias (1–3 por video), misma API que abajo. Se usan en story.js con `S('nombre', inicio, params)`; sus sonidos van con `sfx`.
+Ejemplo: `reference/ejemplo/scenes.js`.
+
 ## Agregar una escena nueva
 En engine.html: `SC.nombre=(p,c)=>{ …armar el DOM dentro de c.box con h(), ml(), kick()…; return t=>{ …animar según t… } }`.
-`c` = `{box, inner, root, D (duración), words (palabras de la escena, tiempos locales), th (colores), area, port}`.
-Helpers: `P(t,a,d)` progreso 0–1 · `E.expo/back/el/o3/io` · `rise(el,t,a)` máscara que sube · `popIn` · `fadeUp` · `split(el)` letras · `syncWords(tokens,words)` · `icon(nombre)` · `fmtNum`.
+`c` = `{box, inner, root, D (duración), words (palabras de la escena, tiempos locales), th (colores), area, port, i (n.º de escena), type, al (alineación del look)}`.
+Helpers: `P(t,a,d)` progreso 0–1 · `E.expo/back/el/o3/io` · `M.ease/M.pop` (curvas del look) · `rise(el,t,a)` máscara que sube · `popIn` · `fadeUp` · `split(el)` letras · `syncWords(tokens,words)` · `icon(nombre)` · `fmtNum` · `kick(b,txt)` · `AL(b,p,c)` alinea según el look · `VAR(p,c,'default')` variante · clase `pnl` = panel del look · `sv()`, `spop`, `dash`, `ripple`, `rnd` para SVG.
 Usar solo colores `var(--fg)`, `var(--bg)`, `var(--hl)`, `var(--hlfg)`, `var(--sub)` para que funcione con cualquier marca. La función tiene que ser pura del tiempo (se renderiza en paralelo). Sumar su sonido en `AUTO` de render.js. Probar con `--test`.
 
-## Motivos de `concept` (animaciones sin texto)
-Todos usan los colores del tema de la escena (`--fg`, `--hl`) y tienen un **momento clave** en `at` (default: mitad de la escena, máx. 1,8 s), que conviene sincronizar con la palabra del concepto.
+## Motivos de referencia de `concept` (NO usarlos en videos: solo para estudiar el patrón)
+El concept de cada video se diseña desde cero en `scenes.js`. Estos motivos muestran cómo construir uno; todos usan los colores del tema de la escena (`--fg`, `--hl`) y tienen un **momento clave** en `at` (default: mitad de la escena, máx. 1,8 s), que conviene sincronizar con la palabra del concepto.
 | motivo | qué muestra | para ideas como |
 |---|---|---|
 | `growth` | barras que suben + línea de tendencia + punto que late | crecer, mejorar, resultados, más pacientes |
@@ -59,4 +101,4 @@ Todos usan los colores del tema de la escena (`--fg`, `--hl`) y tienen un **mome
 | `stack` | bloques que caen y forman una torre | construir, acumular, paso a paso, base |
 | `link` | dos nodos unidos por una línea con pulsos de ida y vuelta; en el momento clave se encienden juntos | dos partes relacionadas, conexión entre zonas del cuerpo, influencia mutua |
 
-Nuevo motivo: `MOT.nombre=(g,p,a,D,r)=>{ …dibujar con sv('circle'|'path'|'line'|…, attrs, g, css)… return t=>{…} }` en un lienzo SVG de 1000×1000 (zona visible ≈110–890). Helpers: `spop` (aparecer), `dash` (dibujar líneas), `ripple` (onda), `r()` aleatorio con semilla. Colores solo con `FG`, `HL`, `HL2`, `SUB`. Probar con `--test --at=0.5,<at>,end`.
+Motivo propio (en `<work>/scenes.js`): `MOT.nombre=(g,p,a,D,r)=>{ …dibujar con sv('circle'|'path'|'line'|…, attrs, g, css)… return t=>{…} }` en un lienzo SVG de 1000×1000 (zona visible ≈110–890). Helpers: `spop` (aparecer), `dash` (dibujar líneas), `ripple` (onda), `r()` aleatorio con semilla. Colores solo con `FG`, `HL`, `HL2`, `SUB`. Probar con `--test --at=0.5,<at>,end`.

@@ -11,7 +11,8 @@ Hablarle al usuario en español rioplatense (voseo). Avisar el avance entre paso
 
 Rutas: `SK` = carpeta de esta skill (Claude Code: `~/.claude/skills/motion`; Codex: `~/.codex/skills/motion`).
 `PY` = el Python de la skill: `$SK/.venv/bin/python -I` (Windows: `$SK\.venv\Scripts\python.exe -I`). Usarlo para **todos** los scripts `.py`.
-Catálogo de escenas: `$SK/reference/escenas.md` · ejemplo completo: `$SK/reference/ejemplo/` (script.json + story.js).
+Catálogo de escenas: `$SK/reference/escenas.md` · ejemplo completo: `$SK/reference/ejemplo/` (script.json + look.json + scenes.js + story.js).
+**Cada video tiene un diseño propio** (aunque sea la misma marca): la marca fija tipografías, colores y logo; el look del video (`look.json`), las variantes de cada placa y las escenas a medida (`scenes.js`) cambian siempre. Nunca reutilizar el look ni el concept de un video anterior.
 Si `doctor.py` marca algo con ✗: `bash $SK/scripts/install.sh` (Windows: `powershell -ExecutionPolicy Bypass -File $SK\scripts\install.ps1`).
 
 ## 0 · Preguntas iniciales (SIEMPRE, antes de producir)
@@ -68,15 +69,25 @@ Crear `$SK/brands/<slug>/brand.json` copiando `brands/editorial/brand.json` (en 
   6. Avisar si la página dice **"No está listo para ver Claim Clear"**: en YouTube puede aparecer un reclamo de Content ID que se resuelve con la licencia (en Instagram/TikTok no afecta).
   - Si no hay navegador o el usuario no quiere: darle el link para que lo baje él y después `envato.py collect "<work>"` (busca en ~/Downloads).
 
-## 4 · Storyboard → `<work>/story.js`
+## 3b · Dirección de arte → `<work>/look.json` (obligatorio, en cada video)
+1. `node $SK/scripts/look.js new "<work>" --tono=<energico|calido|institucional|humor|sobrio>` (el tono que leíste en el guion). Genera un look coherente y **lo más distinto posible de los últimos videos de la marca** (historial en `~/.config/motion/looks/<marca>.json`): paleta y uso del color, estilo de resaltado `H()`, kicks, paneles y radio, decorado de fondo, marco, alineación, escala tipográfica, movimiento, cámara, familia de transiciones, subtítulos y una variante por tipo de placa. Respeta lo que la marca fije en `brand.json` → `"design":{"lock":{…}}`.
+2. Leerlo y **ajustarlo a mano** según el guion (tokens en `reference/escenas.md`). Escribir en `"concepto"` la idea visual en una línea (p. ej. "revista editorial: bloques de color grandes, números gigantes, cortes secos").
+3. `node $SK/scripts/render.js "<work>" --look-preview` → `<work>/look.jpg` (6 placas con el look). Mirarla: contraste, que se sienta distinto a lo anterior y adecuado al tema. Ajustar y repetir.
+
+## 4 · Storyboard → `<work>/story.js` (+ `<work>/scenes.js`)
 Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S(tipo, inicio, params)` por escena, en orden:
 - `inicio`: id de beat (`'b03'`) o `w('palabra')` (arranca en esa palabra). La escena dura hasta que empieza la siguiente; la primera arranca en 0.
 - Dentro de params, **todos los tiempos internos se sincronizan con la voz** usando `w('palabra')` (o `w('palabra', 1)` para la 2ª aparición): ítems de lista, conteos, sellos, mensajes, botón del CTA.
 - Comunes a todas: `bg` (`'dark'|'light'|'accent'|'accent2'`; si se omite alterna solo), `tr` (`'wipe'|'slide'|'circle'|'push'|'zoom'|'cut'`; si se omite rota), `cap:false` (sin subtítulos), `sfx` (`null` = sin sonido · `'pop'` · `[['ding',1.2]]`).
 - Helpers de texto: `H('texto')` = resaltado en caja de color · `A('texto')` = texto en color de acento.
 
+- Variantes: cada placa acepta `v` (p. ej. `stat` → `bar|giant|ring|split`); si se omite usa la del look. Alternar variantes dentro del video: la misma placa con la misma variante no más de 2 veces.
+
+**Diseño a medida (obligatorio): `<work>/scenes.js`** — código que se inyecta en el motor solo para este video (API en `reference/escenas.md`).
+- **El concept se diseña SIEMPRE desde cero para este guion: un motion graphic SIN TEXTO de 3–4 s.** Elegir la idea del guion que más gane vista como imagen (un proceso, una relación, un cambio, una metáfora concreta del tema) y escribir `MOT.<nombre_propio>` en `scenes.js`; usarlo con `S('concept', …, {motif:'<nombre_propio>', at: w('palabra clave')})` para que el momento fuerte caiga en esa palabra. Los motivos del motor (`growth`, `network`, `dialog`…) son **solo referencia** para estudiar el patrón: nunca usarlos ni copiarlos. `render.js` frena el render si el concept es de la biblioteca o idéntico a uno ya usado en la marca. Sin kick ni títulos: la imagen cuenta sola (los subtítulos siguen abajo). Probarlo con `--test --at=0.5,<at>,end`.
+- **1–3 placas a medida** (`SC.<nombre>`): las ideas del guion que ninguna placa del catálogo cuenta bien (un reloj que corre 48 h, una receta que se transforma, un termómetro, una agenda que se llena…). Usan los colores y helpers del motor, así heredan la marca y el look.
+
 **Criterio de dirección (obligatorio):**
-- **Una escena `concept` por video (obligatoria): un motion graphic SIN TEXTO de 3–4 s.** Elegir el concepto del guion que más gane visto como imagen (un proceso, una relación, un cambio, una idea abstracta) y animarlo con formas, líneas y partículas: crecimiento, red, ciclo, filtro, foco, equilibrio, romper una barrera, del caos al orden, latido, camino, atracción, diálogo, bifurcación, acumulación (`motif`, ver `reference/escenas.md`). Ubicarla donde la idea se dice, con `at: w('palabra clave')` para que el momento fuerte de la animación caiga en esa palabra. Si ningún motivo representa bien la idea, crear uno nuevo en `engine.html` (`MOT.nombre`, siguiendo el patrón de los existentes) en vez de forzar uno que no corresponde. Sin kick ni títulos: la imagen cuenta sola (los subtítulos siguen abajo).
 - **Gancho en los primeros 2 s**: `question`, `bigword`, `kinetic` o `title` fuerte, en fondo `accent`. El primer cambio de escena antes de los 3–4 s.
 - **Ritmo**: una escena cada 3–5 s (12–18 escenas por minuto). Nada quieto más de ~5 s: si la escena es larga, que se vaya armando (ítems sincronizados).
 - **Variedad**: no repetir el tipo de escena seguido; máximo 2 `kinetic` seguidas; alternar escenas de texto con gráficas (`stat`, `bars`, `donut`, `icons`, `steps`, `compare`, `phone`).
@@ -96,7 +107,7 @@ Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S
 - Revisar en `render.js --plan` la lista final de SFX: cada uno tiene que sumar; si no, sacarlo (`sfx: null` en la escena).
 
 ## 5 · Plan, prueba y render
-1. `node $SK/scripts/render.js "<work>" --plan` → escenas con tiempos, SFX y avisos de **Dirección**. Corregir todos los ⚠️ y repetir.
+1. `node $SK/scripts/render.js "<work>" --plan` → escenas con tiempos, variante, SFX y avisos de **Dirección**. Corregir todos los ✗ (frenan el render) y los ⚠️, y repetir.
 2. `node $SK/scripts/render.js "<work>" --test --at=0.3,mid,end` → `<work>/sheet.jpg` (3 cuadros por escena: entrando, a la mitad, armada). **Mirar la hoja** y corregir: textos que se achican de más (aviso "se achicó al N %"), cortes, superposiciones con los subtítulos, colores con poco contraste, escenas vacías a la mitad (el contenido tiene que aparecer rápido).
 3. Render final (en segundo plano, ~1 min por minuto de video): `node $SK/scripts/render.js "<work>"` → `<work>/video.mp4`.
 4. `$PY $SK/scripts/mix.py "<work>"` → `<NAME>.mp4` + `<NAME>.srt` en `out_dir`.
@@ -104,13 +115,14 @@ Basarse en `reference/escenas.md` y `reference/ejemplo/story.js`. Una llamada `S
 6. Mirar 3–4 cuadros del MP4 final (`ffmpeg -ss <t> -i <mp4> -frames:v 1 x.jpg`) para confirmar.
 
 ## 6 · Entrega
+- `node $SK/scripts/look.js log "<work>"` (guarda el look y las firmas de scenes.js en el historial de la marca: el próximo video sale distinto y no puede repetir el concept).
 - `$PY $SK/scripts/timing.py report "<work>"`.
-- `LEEME.md` en `out_dir`: **cómo abrirlo en Premiere** (Archivo → Importar → `<NAME>_premiere.xml`; no mover ni renombrar la carpeta; tabla de pistas; qué se edita ahí — cortar/mover/borrar escenas, re-timear frases de la voz, cambiar música y volúmenes, sacar SFX, usar el `.srt` como subtítulos nativos — y qué no: el texto dentro de cada gráfico, que se cambia pidiéndoselo a Claude), voz usada, marca, formato, duración, estructura (tabla escena → texto → tiempo), música (con `envato.py report` y si falta licenciar), SFX, tiempo de procesamiento, cómo pedir cambios.
+- `LEEME.md` en `out_dir`: **cómo abrirlo en Premiere** (Archivo → Importar → `<NAME>_premiere.xml`; no mover ni renombrar la carpeta; tabla de pistas; qué se edita ahí — cortar/mover/borrar escenas, re-timear frases de la voz, cambiar música y volúmenes, sacar SFX, usar el `.srt` como subtítulos nativos — y qué no: el texto dentro de cada gráfico, que se cambia pidiéndoselo a Claude), voz usada, marca, look (el `concepto` de look.json), formato, duración, estructura (tabla escena → texto → tiempo), música (con `envato.py report` y si falta licenciar), SFX, tiempo de procesamiento, cómo pedir cambios.
 - Responder corto: ruta del MP4 y del XML, duración, voz y música elegidas (con una línea de por qué esa música y "música licenciada: <tema> de <autor>", más el aviso de Claim Clear si corresponde; o avisar si quedó la vista previa y por qué), escenas destacadas, tiempo total.
 
 ## Versiones (v2, ajustes)
 Reusar `.work`: cambiar `script.json` (voz/texto: solo se regeneran los beats tocados) y/o `story.js`, apuntar `out_dir` a `<NAME>_MOTION_v2` y repetir desde el paso que corresponda (cambio de música o volumen → solo `mix.py` + `build_xml.py`; cambio visual → render + mix + `render.js --premiere --only=<n.º de escena>` + `build_xml.py`; cambio de texto → tts + todo).
-**Cambiar un texto de un gráfico ya importado en Premiere**: editar story.js y correr `render.js --premiere --only=N` (re-renderiza solo esa escena con el **mismo nombre de archivo**), el MP4 si se quiere, y avisar al usuario que en Premiere haga clic derecho en el clip → *Reemplazar/Vincular medios* (o cierre y reabra el proyecto) para ver el cambio. Si cambia la duración de la escena, regenerar el XML y reimportar. Escenas nuevas: agregarlas a `engine/engine.html` siguiendo `escenas.md`.
+**Cambiar un texto de un gráfico ya importado en Premiere**: editar story.js y correr `render.js --premiere --only=N` (re-renderiza solo esa escena con el **mismo nombre de archivo**), el MP4 si se quiere, y avisar al usuario que en Premiere haga clic derecho en el clip → *Reemplazar/Vincular medios* (o cierre y reabra el proyecto) para ver el cambio. Si cambia la duración de la escena, regenerar el XML y reimportar. Escenas propias de un video: en `<work>/scenes.js`. Solo si una placa sirve para cualquier video, sumarla (o como variante) a `engine/engine.html` siguiendo `escenas.md`.
 
 ## Notas técnicas
 - Capas para Premiere: escenas en ProRes 422 HQ (opacas); subtítulos y logo en ProRes 4444 con alfa. El audio en Premiere queda ~2 dB más bajo que el MP4 (el MP4 lleva una normalización final a −14 LUFS).
