@@ -5,10 +5,10 @@ const fs=require('fs'),path=require('path'),os=require('os'),crypto=require('cry
 exports.PAL={classic:['dark','light','dark','accent'],dark:['dark','dark','accent','dark','light'],light:['light','light','accent','light','dark'],
   blocks:['accent','dark','accent','light'],duo:['dark','light'],accent2:['dark','accent2','light','accent']};
 // variantes de layout por escena (la primera es el diseño clásico); tienen que coincidir con engine/engine.html
-exports.VARIANTS={title:['stack','offset','framed'],kinetic:['rise','pop','light'],bigword:['letters','outline','echo'],stat:['bar','giant','ring','split'],
+exports.VARIANTS={title:['stack','offset','framed','mask'],kinetic:['rise','pop','light','slam','track','stackup'],bigword:['letters','outline','echo','slam'],stat:['bar','giant','ring','split'],
   list:['rows','cards','bignum'],steps:['line','cards'],compare:['panels','strike','split'],quote:['mark','bar'],bars:['bars','columns'],donut:['ring','dots'],
   icons:['tiles','rows'],question:['mark','inline','bubble'],cta:['button','card']};
-exports.TRANSITIONS=['wipe','slide','circle','push','zoom','cut','wipex','split','diag','shape','blinds'];
+exports.TRANSITIONS=['wipe','slide','circle','push','zoom','cut','wipex','split','diag','shape','blinds','layers','iris','zoomblur','slice','morph'];
 exports.DECOR=['blobs','rings','dots','stripes','halftone','glyph','orbit','lines','gradient','sun'];
 
 // marcas: las propias en ~/.config/motion/brands/<marca> (fuera del repo, sobreviven a reinstalar); las de ejemplo en <skill>/brands
@@ -38,7 +38,7 @@ const toks=s=>new Set(String(s||'').toLowerCase().normalize('NFD').replace(/[\u0
 exports.ideaSim=(a,b)=>{const A=toks(a),B=toks(b);if(!A.size||!B.size)return 0;let n=0;for(const x of A)if(B.has(x))n++;return n/Math.min(A.size,B.size);};
 
 // parecido entre dos looks (0–1) por tokens de diseño
-exports.LOOK_KEYS=['align','valign','frame','scale','kick','kickFont','hl','panel','radius','decor','motion','cam','transitions','palette','hlPrefer','captions','variants'];
+exports.LOOK_KEYS=['estilo','blur','depth','punch','align','valign','frame','scale','kick','kickFont','hl','panel','radius','decor','motion','cam','transitions','palette','hlPrefer','captions','variants'];
 exports.lookSim=(a,b)=>{let n=0,eq=0;for(const k of exports.LOOK_KEYS){if(a[k]===undefined&&b[k]===undefined)continue;
   if(k==='variants'){const ks=new Set([...Object.keys(a[k]||{}),...Object.keys(b[k]||{})]);for(const t of ks){n+=.25;if((a[k]||{})[t]===(b[k]||{})[t])eq+=.25;}continue;}
   n++;if(JSON.stringify(a[k])===JSON.stringify(b[k]))eq++;}return n?eq/n:1;};

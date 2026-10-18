@@ -60,6 +60,7 @@ La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos 
 | `brands/` | Marca de ejemplo (`editorial`). Las propias se guardan en `~/.config/motion/brands/` (fuera del repo) y las usa también la skill [edicion](https://github.com/gustavopascaner/edicion) |
 | `scripts/look.js`, `scripts/design.js` | Dirección de arte por video e historial de looks por marca |
 | `reference/` | Catálogo de escenas, guías por tema (marca nueva, voces, Envato, Premiere, preferencias) y un ejemplo completo |
+| `scripts/finish.sh`, `finish.ps1`, `qc.py`, `receta.js` | Cierre en una corrida (render + mix + Premiere + QC), control de calidad del MP4 y consulta del recetario por receta |
 | `scripts/selftest.sh` | Prueba rápida sin red: plan, hoja de prueba, subtítulos y variantes del motor |
 
 Tipografías de `brands/editorial/fonts` y las que baja `brand.py`: Google Fonts (SIL Open Font License). La música de Envato se **licencia y descarga automáticamente, sin preguntar**, desde tu sesión de Envato en el navegador de la app de Claude: iniciás sesión vos una sola vez (Claude nunca usa tu contraseña) y en cada video se reemplaza la vista previa por el WAV original, sin marca de agua. Si no hay sesión o falla la descarga, el video se entrega igual con la vista previa y te avisa.

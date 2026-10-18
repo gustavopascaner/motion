@@ -17,4 +17,12 @@ Reusar `.work`: cambiar `script.json` (voz/texto: solo se regeneran los beats to
 - cambio de texto → tts + todo.
 
 **Cambiar un texto de un gráfico ya importado en Premiere**: editar story.js y correr `render.js --premiere --only=N` (re-renderiza solo esa escena con el **mismo nombre de archivo**), el MP4 si se quiere, y avisar al usuario que en Premiere haga clic derecho en el clip → *Reemplazar/Vincular medios* (o cierre y reabra el proyecto). Si cambia la duración de la escena, regenerar el XML y reimportar.
-Escenas propias de un video: en `<work>/scenes.js`. Solo si una placa sirve para cualquier video, sumarla (o como variante) a `engine/engine.html` siguiendo `escenas.md`.
+Escenas propias de un video: en `<work>/scenes.js`. Solo si una placa sirve para cualquier video, sumarla (o como variante) a `engine/engine.html` siguiendo `api.md`.
+
+## Cierre en una corrida
+`bash $SK/scripts/finish.sh "<work>"` (Windows: `powershell -ExecutionPolicy Bypass -File $SK\scripts\finish.ps1 "<work>"`) hace render final + `mix.py` + (si `config.premiere !== false`) `render.js --premiere` + `build_xml.py` + `qc.py` + `look.js log` + `timing.py report`. Salida mínima (MP4, XML, QC, tiempo total); el detalle va a `<work>/finish.log`. Si falla, muestra las últimas líneas del log.
+
+## Notas técnicas
+- Motor: `engine/engine.html` renderizado cuadro a cuadro con Chrome (puppeteer-core) en paralelo, H.264 yuv420p; todas las escenas son funciones puras del tiempo. El contenido se escala solo al área segura (avisa si se achica mucho).
+- `render.js` imprime solo inicio/fin y errores; `--verbose` muestra el progreso por cuadro.
+- No usar `rm -rf` con globs relativos.

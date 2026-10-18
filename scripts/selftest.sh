@@ -10,7 +10,7 @@ fail=0; ok(){ printf "\033[32mOK\033[0m  %s\n" "$1"; }; bad(){ printf "\033[31mF
 # 1 · sintaxis
 for f in "$SK"/scripts/*.js; do node --check "$f" 2>/dev/null || bad "sintaxis $f"; done
 for f in "$SK"/scripts/*.py; do "$PY" -I -c "import ast,sys;ast.parse(open(sys.argv[1],encoding='utf-8').read())" "$f" || bad "sintaxis $f"; done
-bash -n "$SK/scripts/install.sh" || bad "sintaxis install.sh"
+for f in install.sh finish.sh; do bash -n "$SK/scripts/$f" || bad "sintaxis $f"; done
 [ $fail = 0 ] && ok "sintaxis de scripts"
 
 # 2 · subtítulos: lo escrito ("70 %", "OMS") sobre los tiempos de lo pronunciado
@@ -39,5 +39,12 @@ else bad "render.js --plan"; cat "$T/plan.txt"; fi
 "$PY" -I -c "import json,sys;c=json.load(open(sys.argv[1]));assert any(w['w']=='70\u00a0%' for g in c for w in g['words'])" "$W/captions.json" && ok "subtítulos del ejemplo muestran \"70 %\"" || bad "subtítulos del ejemplo no muestran \"70 %\""
 if HOME="$T/home" node "$SK/scripts/render.js" "$W" --test --at=end > "$T/test.txt" 2>&1 && [ -s "$W/sheet.jpg" ]; then ok "hoja de prueba ($(ls "$W"/test/*.jpg | wc -l | tr -d ' ') cuadros)"
 else bad "render.js --test"; cat "$T/test.txt"; fi
+
+# 5 · --check (plan + hoja en una corrida), hoja ≤ 1400 px, receta.js
+if HOME="$T/home" node "$SK/scripts/render.js" "$W" --check --at=0.2,end > "$T/check.txt" 2>&1 && grep -q '^hoja:' "$T/check.txt" && grep -q 'Dirección' "$T/check.txt"; then
+  sw=$(ffprobe -v error -show_entries stream=width -of csv=p=0 "$W/sheet.jpg" 2>/dev/null | head -1)
+  [ -n "$sw" ] && [ "$sw" -le 1400 ] && ok "render.js --check (hoja ${sw} px de ancho)" || bad "hoja de --check más ancha que 1400 px ($sw)"
+else bad "render.js --check"; cat "$T/check.txt"; fi
+node "$SK/scripts/receta.js" | grep -q 'R03' && node "$SK/scripts/receta.js" R03 | head -1 | grep -q 'R03' && ! node "$SK/scripts/receta.js" R99 >/dev/null 2>&1 && ok "receta.js (índice y receta suelta)" || bad "receta.js"
 
 echo; [ $fail = 0 ] && echo "Todo bien ✓" || echo "Hay fallas ✗"; exit $fail

@@ -6,6 +6,9 @@ uso: $PY brand.py list                       → marcas guardadas
                                                falten, copia el logo a la carpeta de la marca y chequea el contraste
      $PY brand.py colors <imagen>            → colores dominantes de un logo o imagen (hex), para proponer paleta
      $PY brand.py fonts                      → combinaciones de tipografías sugeridas
+     $PY brand.py detect <carpeta>           → marca de esa carpeta (archivo .marca, videos anteriores de motion o edicion, nombre de carpeta);
+                                               exit 2 si no hay
+     $PY brand.py remember <carpeta> <marca> → guarda .marca en la carpeta (la misma que lee la skill edicion)
 Para crear una marca: escribir ~/.config/motion/brands/<marca>/brand.json (copiar brands/editorial/brand.json) con solo "family" en cada
 tipografía (sin "files") y correr setup. Después: node scripts/render.js --brand-preview=<marca> --out=<png>
 """
@@ -88,6 +91,61 @@ def colors(img):
         if len(out)>=6: break
     for h,f in out: print(f'{h}  {f*100:4.1f} %  luminancia {lum(h):.2f}')
 
+def slugs():
+    out={}
+    for root in (UB,BR):
+        for s in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+            p=os.path.join(root,s,'brand.json')
+            if os.path.exists(p) and s not in out:
+                try: out[s]=json.load(open(p)).get('name',s)
+                except Exception: pass
+    return out
+
+def _norm(t):
+    import unicodedata
+    t=''.join(c for c in unicodedata.normalize('NFD',str(t)) if unicodedata.category(c)!='Mn').lower()
+    return re.sub(r'^-|-$','',re.sub(r'[^a-z0-9]+','-',t))
+
+def detect(d):
+    """Misma lógica que detect() de la skill edicion (scripts/brand.js): mantener las dos iguales.
+    1) .marca en la carpeta o hasta 3 niveles arriba · 2) "brand" del config.json de videos anteriores (<x>_MOTION o <x>_EDIT
+    en la carpeta o la de arriba; gana el más reciente) · 3) nombre de la carpeta o de sus padres = slug o nombre de una marca."""
+    d=os.path.abspath(d);H=os.path.expanduser('~')
+    if os.path.isfile(d): d=os.path.dirname(d)
+    names=slugs();valid=set(names)|{'editorial'};ups=[]
+    while len(ups)<4 and d!=H and d!=os.path.dirname(d): ups.append(d);d=os.path.dirname(d)
+    for u in ups:
+        f=os.path.join(u,'.marca')
+        if os.path.exists(f):
+            s=open(f).read().strip()
+            if s in valid: return s,f'archivo {f}'
+    for u in ups[:2]:
+        cf=[]
+        try: ents=os.listdir(u)
+        except OSError: ents=[]
+        for e in ents:
+            if re.search(r'_(MOTION|EDIT)$',e):
+                f=os.path.join(u,e,'.work','config.json')
+                try:
+                    c=json.load(open(f))
+                    if c.get('brand') in valid: cf.append((os.path.getmtime(f),c['brand'],f))
+                except Exception: pass
+        if cf: t,s,f=max(cf);return s,f'video anterior {f}'
+    keys=[(s,[_norm(s),_norm(n)]) for s,n in names.items()]
+    for u in ups:
+        seg=_norm(os.path.basename(u))
+        if not seg: continue
+        for s,k in keys:
+            if seg in k: return s,f'nombre de carpeta "{os.path.basename(u)}"'
+        part=[s for s,k in keys if not re.search(r'-v\d+$',s) and any(len(x)>=4 and f'-{x}-' in f'-{seg}-' for x in k)]
+        if len(part)==1: return part[0],f'nombre de carpeta "{os.path.basename(u)}"'
+    return None
+
+def remember(d,slug):
+    if slug!='editorial' and slug not in slugs(): sys.exit(f'✗ no existe la marca "{slug}"')
+    d=d if os.path.isdir(d) else os.path.dirname(os.path.abspath(d))
+    open(os.path.join(d,'.marca'),'w').write(slug+'\n');print(f'✓ {os.path.join(d,".marca")} → {slug}')
+
 if __name__=='__main__':
     a=sys.argv[1:]
     if not a or a[0] in('-h','--help'): print(__doc__)
@@ -101,5 +159,10 @@ if __name__=='__main__':
     elif a[0]=='show': print(open(os.path.join(bdir(a[1]),'brand.json')).read())
     elif a[0]=='setup': setup(a[1])
     elif a[0]=='colors': colors(a[1])
+    elif a[0]=='detect':
+        r=detect(a[1] if len(a)>1 else '.')
+        if not r: print('(sin marca detectada)');sys.exit(2)
+        print(f'{r[0]}\t{r[1]}')
+    elif a[0]=='remember': remember(a[1],a[2])
     elif a[0]=='fonts':
         for n,*f in PAIRS: print(f'{n:22s} títulos {f[0]} · texto {f[1]} · etiquetas {f[2]} · acento {f[3]}')

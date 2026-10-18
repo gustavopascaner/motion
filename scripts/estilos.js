@@ -1,0 +1,57 @@
+// Direcciones de arte curadas: cada estilo es una combinación COHERENTE de tokens de look.json (tipografía y colores siguen siendo de la marca).
+// look.js new --estilo=<slug> parte del estilo y solo varía lo que el estilo deja libre; sin --estilo elige uno por tono que no se haya usado
+// en los últimos 3 videos de la marca. Documentación para elegir: reference/estilos.md (mantener las dos cosas iguales).
+exports.STYLES={
+  'suizo-cinetico':{name:'Suizo cinético',tonos:['institucional','sobrio','energico'],
+    desc:'grilla estricta, alineado a la izquierda, tipografía enorme que entra con cortes secos y franjas',
+    tokens:{align:'left',valign:'top',frame:'column',hl:'underline',panel:'flat',radius:0,kick:'number',kickFont:'mono',decor:['lines','grid'],
+      motion:'punch',cam:'none',blur:.4,depth:0,punch:.3,transitions:['slice','wipex','cut']},
+    variants:{title:'mask',kinetic:'track',bigword:'slam',stat:'giant',list:'bignum',compare:'strike'},
+    reglas:'Todo en la grilla. Números y palabras gigantes, poco texto. Cortes secos en el golpe de compás. Nada redondeado.'},
+  'impacto':{name:'Impacto',tonos:['energico','humor'],
+    desc:'bloques de color plenos, palabras que caen con fuerza, paneles con sombra dura, ritmo de golpe',
+    tokens:{palette:'blocks',hl:'box',panel:'offset',radius:0,kick:'tag',kickFont:'mono',decor:['stripes','grain'],
+      motion:'punch',cam:'zoom',blur:.8,depth:0,punch:.8,transitions:['layers','cut','zoomblur']},
+    variants:{kinetic:'slam',bigword:'slam',stat:'giant',title:'offset',list:'cards',compare:'split'},
+    reglas:'Cada remate es un golpe (slam + punch). Fondos de color pleno alternados. Escenas cortas (2–3 s). Las transiciones layers en los cambios de tema.'},
+  'profundidad':{name:'Profundidad 3D',tonos:['institucional','energico','sobrio'],
+    desc:'escenario con perspectiva: tarjetas que giran y se apilan en el espacio, cámara que se inclina',
+    tokens:{palette:'dark',hl:'pill',panel:'soft',radius:24,kick:'dot',kickFont:'body',decor:['orbit','grain'],
+      motion:'smooth',cam:'tilt',blur:.5,depth:1,punch:.3,transitions:['zoomblur','iris','push']},
+    variants:{kinetic:'light',stat:'ring',list:'cards',steps:'cards',icons:'tiles',compare:'panels'},
+    reglas:'Pensar en capas (fondo, medio, frente). Las placas a medida usan flipIn/fold y parallax. Pocos colores, mucha luz sobre oscuro.'},
+  'papel':{name:'Papel recortado',tonos:['calido','humor'],
+    desc:'formas orgánicas como recortes de papel, resortes suaves, colores cálidos y planos',
+    tokens:{palette:'light',hl:'marker',panel:'solid',radius:36,kick:'plain',kickFont:'accent',decor:['blobs','grain'],
+      motion:'elastic',cam:'drift',blur:.3,depth:1,punch:.2,transitions:['layers','morph','slide']},
+    variants:{kinetic:'pop',title:'offset',list:'cards',icons:'tiles',question:'bubble',stat:'split'},
+    reglas:'Todo entra con resorte y se asienta. Formas que se superponen como capas de papel. El objeto héroe puede ser una forma recortada que viaja.'},
+  'data':{name:'Data journalism',tonos:['institucional','sobrio'],
+    desc:'gráficos que se construyen con precisión, números como protagonistas, filetes finos y anotaciones',
+    tokens:{palette:'duo',hl:'outline',panel:'outline',radius:12,kick:'bracket',kickFont:'mono',decor:['glyph','grid'],
+      motion:'snappy',cam:'pull',blur:.4,depth:0,punch:.4,transitions:['wipe','slice','morph']},
+    variants:{stat:'bar',bars:'columns',kinetic:'stackup',donut:'dots',list:'rows',steps:'line'},
+    reglas:'Cada dato tiene su gráfico que se dibuja al ritmo de la voz. Anotaciones mono. El concept puede ser una visualización abstracta del dato.'},
+  'liquido':{name:'Líquido suave',tonos:['calido','sobrio'],
+    desc:'transiciones que fluyen de una escena a otra, formas redondas, degradados suaves y movimiento continuo',
+    tokens:{palette:'light',hl:'pill',panel:'soft',radius:56,kick:'dot',kickFont:'body',decor:['gradient','sun'],
+      motion:'smooth',cam:'drift',blur:.6,depth:0,punch:.2,transitions:['morph','iris','circle']},
+    variants:{kinetic:'light',stat:'ring',donut:'ring',quote:'bar',question:'bubble',cta:'card'},
+    reglas:'Nada se corta: cada escena nace de la anterior (morph). Formas circulares. Ideal para salud emocional y cuidado.'},
+  'pop':{name:'Pop',tonos:['humor','energico'],
+    desc:'colores saturados, tramas de puntos, rebotes y elementos que asoman con humor',
+    tokens:{palette:'accent2',hl:'pill',panel:'offset',radius:24,kick:'tag',kickFont:'mono',decor:['halftone','dots'],
+      motion:'elastic',cam:'zoom',blur:.5,depth:0,punch:.6,transitions:['iris','layers','shape']},
+    variants:{kinetic:'pop',bigword:'echo',title:'offset',stat:'giant',question:'bubble',list:'cards'},
+    reglas:'Exagerar: rebotes, asomarse, apretar. Un chiste visual por video. Los íconos actúan (saltan, tiemblan).'},
+  'cine':{name:'Editorial cine',tonos:['sobrio','calido','institucional'],
+    desc:'oscuro, tipografía en grande con mucho aire, marcos finos, cámara que se acerca lento y cortes en el golpe',
+    tokens:{palette:'dark',hl:'underline',panel:'flat',radius:0,kick:'line',kickFont:'accent',decor:['grain','lines'],frame:'corners',
+      motion:'smooth',cam:'pull',blur:.5,depth:1,punch:.3,transitions:['cut','zoomblur','wipe']},
+    variants:{title:'mask',kinetic:'light',quote:'bar',bigword:'outline',stat:'split',compare:'strike'},
+    reglas:'Mucho aire y pocas palabras por placa. Silencios visuales antes del remate. Cortes secos en el compás, zoomblur en los cambios de tema.'}};
+
+// elige estilo por tono, evitando los usados en los últimos `avoid` videos de la marca
+exports.pickStyle=(r,tone,recent)=>{const all=Object.entries(exports.STYLES);
+  let c=all.filter(([k,s])=>(!tone||s.tonos.includes(tone))&&!recent.includes(k));if(!c.length)c=all.filter(([k])=>!recent.includes(k));if(!c.length)c=all;
+  return c[Math.floor(r()*c.length)][0];};

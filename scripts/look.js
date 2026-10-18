@@ -1,10 +1,11 @@
 // Dirección de arte por video: genera <work>/look.json (diseño distinto en cada video, dentro de la marca) y lleva el historial por marca.
-// uso: node look.js new <work> [--tono=energico|calido|institucional|humor|sobrio] [--seed=N] [--force]
+// uso: node look.js new <work> [--tono=energico|calido|institucional|humor|sobrio] [--estilo=<slug>|auto] [--seed=N] [--force]
+//      node look.js estilos     → lista las direcciones de arte curadas (scripts/estilos.js, reference/estilos.md)
 //      node look.js show <work>     → resume el look y cuánto se parece a los anteriores de la marca
 //      node look.js log <work>      → al entregar: guarda look + firmas de scenes.js en ~/.config/motion/looks/<marca>.json
 // La tipografía, los colores y el logo vienen siempre de la marca; brand.json → "design": {"lock": {...}} fija tokens que no deben variar.
 const fs=require('fs'),path=require('path');
-const D=require('./design.js');
+const D=require('./design.js'),ST=require('./estilos.js');
 const SK=path.join(__dirname,'..');
 const arg=k=>{const a=process.argv.find(x=>x.startsWith('--'+k+'='));return a?a.slice(k.length+3):null;};
 
@@ -55,14 +56,20 @@ function cmdNew(WD){const cfg=readCfg(WD),slug=cfg.brand||'editorial',brand=read
   const out=path.join(WD,'look.json');if(fs.existsSync(out)&&!process.argv.includes('--force'))throw new Error('ya existe look.json (editarlo, o --force para generar otro)');
   const tone=arg('tono')||'',seed=+(arg('seed')||Date.now()%100000),r=rng(seed),hist=D.history(slug,WD),last=hist.slice(-5).map(x=>x.look||{});
   // muchos candidatos coherentes → el más distinto de los últimos looks de la marca
-  let best=null;for(let i=0;i<60;i++){const c={...candidate(r,tone,brand,last[last.length-1]),...lock};const s=last.length?Math.max(...last.map(x=>D.lookSim(c,x))):0;
+  // estilo curado: fija una combinación coherente de tokens; lo libre (paleta si no la fija, marco, variantes que no nombra) varía
+  const recent=hist.slice(-3).map(x=>(x.look||{}).estilo).filter(Boolean);let est=arg('estilo')||'auto';
+  if(est==='auto')est=ST.pickStyle(r,tone,recent);if(!ST.STYLES[est])throw new Error(`no existe el estilo "${est}": ${Object.keys(ST.STYLES).join(', ')}`);
+  const sty=ST.STYLES[est],styTok={...sty.tokens};if(styTok.palette==='accent2'&&!brand.colors.accent2)styTok.palette='blocks';
+  let best=null;for(let i=0;i<60;i++){const base=candidate(r,tone,brand,last[last.length-1]);
+    const c={...base,...styTok,variants:{...base.variants,...sty.variants},...lock};const s=last.length?Math.max(...last.map(x=>D.lookSim(c,x))):0;
     const sc=s-.08*fit(c,tone);if(!best||sc<best.sc)best={c,s,sc};}
-  const look={concepto:'(escribir en una línea la idea visual de este video)',concept_idea:'(qué cuenta el concept sin texto, en una línea: "una onda va y vuelve entre dos burbujas")',tono:tone||null,seed,...best.c};
+  const look={estilo:est,estilo_reglas:sty.reglas,tratamiento:'(idea madre del video + objeto héroe que reaparece: paso 3b de SKILL.md)',concepto:'(escribir en una línea la idea visual de este video)',concept_idea:'(qué cuenta el concept sin texto, en una línea: "una onda va y vuelve entre dos burbujas")',tono:tone||null,seed,...best.c};
   fs.writeFileSync(out,JSON.stringify(look,null,1));
   console.log(`✓ ${out}${last.length?` (parecido máx. con los ${last.length} anteriores: ${Math.round(best.s*100)} %)`:''}`);show(look);
   console.log('→ ajustar a mano lo que haga falta según el guion, escribir "concepto" y mirar: node render.js <work> --look-preview');}
 
 function show(L){const v=Object.entries(L.variants||{}).map(([k,x])=>`${k}:${x}`).join(' ');
+  if(L.estilo)console.log(`  estilo ${L.estilo} (${(ST.STYLES[L.estilo]||{}).name||'?'}) — ${L.estilo_reglas||''}\n  blur ${L.blur??0} · profundidad ${L.depth??0} · punch ${L.punch??0}`);
   console.log(`  paleta ${L.palette} · resaltado ${L.hl} (${L.hlPrefer}) · kick ${L.kick}/${L.kickFont} · paneles ${L.panel} r${L.radius}
   decorado ${(L.decor||[]).join('+')} · marco ${L.frame} · alineación ${L.align}/${L.valign} · escala ${L.scale}
   movimiento ${L.motion} · cámara ${L.cam} · transiciones ${(L.transitions||[]).join(',')} · subtítulos ${L.captions}
@@ -80,6 +87,8 @@ function cmdLog(WD){const cfg=readCfg(WD),slug=cfg.brand||'editorial',f=path.joi
     motifs:defs.filter(d=>d.kind==='MOT').map(({name,hash})=>({name,hash})),scenes:defs.filter(d=>d.kind==='SC').map(({name,hash})=>({name,hash}))});
   fs.writeFileSync(hf,JSON.stringify(all,null,1));console.log(`✓ look de ${cfg.name} guardado en ${hf} (${all.length} videos de la marca)`);}
 
-try{const [cmd,wd]=process.argv.slice(2);if(!wd)throw new Error('uso: node look.js new|show|log <work> [--tono=…] [--seed=N]');const WD=path.resolve(wd);
+try{const [cmd,wd]=process.argv.slice(2);
+  if(cmd==='estilos'){for(const [k,x] of Object.entries(ST.STYLES))console.log(`${k.padEnd(16)} ${x.name.padEnd(18)} [${x.tonos.join(', ')}] ${x.desc}`);process.exit(0);}
+  if(!wd)throw new Error('uso: node look.js new|show|log <work> [--tono=…] [--seed=N]');const WD=path.resolve(wd);
   ({new:cmdNew,show:cmdShow,log:cmdLog}[cmd]||(()=>{throw new Error('comando desconocido: '+cmd)}))(WD);}
 catch(e){console.error('✗',e.message);process.exit(1);}

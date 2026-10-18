@@ -1,15 +1,18 @@
 // Arma la línea de tiempo (story.js + words.json + marca) y renderiza el video de motion graphics (sin audio).
 // uso: node render.js <work> --plan                → escenas, tiempos, SFX y avisos de dirección (no renderiza)
-//      node render.js <work> --test [--at=end]     → un cuadro por escena → <work>/test/*.jpg + hoja <work>/sheet.jpg
+//      node render.js <work> --test [--at=end]     → un cuadro por escena → <work>/test/*.jpg + hoja <work>/sheet.jpg (ancho máx. 1400 px)
+//      node render.js <work> --check [--at=…]      → plan + hoja de prueba en una sola corrida (default --at=0.06,0.18,0.35,mid,end); salida compacta
 //      node render.js <work> [--par=6]             → <work>/video.mp4 (después: mix.py)
 //      node render.js <work> --premiere [--only=3,5|caps|overlay] → capas .mov en <out_dir>/Assets (después: build_xml.py)
 //      node render.js <work> --look-preview        → muestra del look del video (6 placas) → <work>/look.jpg
+//      (todos los modos imprimen solo inicio/fin y errores; --verbose = progreso por cuadro y detalle)
 //      node render.js --brand-preview=<marca> --out=<png> [--format=9:16]   → muestra de la marca (4 escenas)
 // Diseño por video: <work>/look.json (dirección de arte, ver scripts/look.js) y <work>/scenes.js (placas y conceptos a medida, se inyecta en el motor).
 const fs=require('fs'),path=require('path'),os=require('os'),{spawn,spawnSync}=require('child_process');
 const SK=path.join(__dirname,'..'),ENG=path.join(SK,'engine');
 const puppeteer=require(path.join(ENG,'node_modules','puppeteer-core'));
 const {CHROME,fileURL,logTime}=require('./platform.js');
+const VERBOSE=process.argv.includes('--verbose');
 const arg=k=>{const a=process.argv.find(x=>x.startsWith('--'+k+'='));return a?a.slice(k.length+3):null;};
 const FORMATS={'9:16':[1080,1920],'1:1':[1080,1080],'4:5':[1080,1350],'16:9':[1920,1080]};
 const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9%]/g,'');
@@ -53,6 +56,12 @@ function build(WD){
   let prev=0;const sc=raw.map((r,i)=>{let s;
     if(i===0)s=0;else if(typeof r.start==='number')s=r.start;else if(typeof r.start==='string')s=beatS(r.start)-.12;else if(r.start&&r.start.__w)s=findW(r.start,prev)-.12;
     else throw new Error(`escena ${i} (${r.type}): inicio inválido`);prev=s;return {...r,s:+s.toFixed(3)};});
+  // cortes en el ritmo: cada corte se corre al golpe de la música más cercano si está a ≤ snap s (beats.json de scripts/beats.py)
+  const BF=path.join(WD,'beats.json'),snap=cfg.snap_beats===false?0:(+cfg.snap_beats||.15);let snapped=0;
+  if(snap&&fs.existsSync(BF)){const B=JSON.parse(fs.readFileSync(BF,'utf8')),bs=[...(B.downbeats||[]).map(t=>({t,k:.7})),...(B.beats||[]).map(t=>({t,k:1}))];
+    sc.forEach((x,i)=>{if(!i||typeof x.start==='number')return;let best=null;
+      for(const b of bs){const d=Math.abs(b.t-x.s)*b.k;if(Math.abs(b.t-x.s)<=snap&&(!best||d<best.d))best={t:b.t,d};}   // el golpe de compás gana si está casi igual de cerca
+      if(best){x.s=+best.t.toFixed(3);snapped++;}});}
   for(let i=1;i<sc.length;i++)if(sc[i].s<=sc[i-1].s+.3)throw new Error(`escena ${i} (${sc[i].type}) empieza antes o casi junto con la anterior (${sc[i].s} s)`);
   const look=loadLook(WD,brand),custom=fs.existsSync(path.join(WD,'scenes.js'))?path.join(WD,'scenes.js'):null;
   const ROT=(PAL[look.palette]||PAL.classic).filter(k=>brand.colors[k]),TRS=look.transitions&&look.transitions.length?look.transitions:['wipe','slide','circle','push','zoom'];let ti=0;
@@ -86,7 +95,10 @@ function build(WD){
   for(const x of sc){const p=x.p;if(p.sfx===null)continue;
     if(p.sfx){(Array.isArray(p.sfx)?p.sfx:[p.sfx]).forEach(q=>{const [spec,at=0,o={}]=Array.isArray(q)?q:[q];ev.push({spec,t:x.s+at,o,manual:true});});continue;}
     // la primera escena no lleva whoosh: no hay transición y arrancaría cortado en su pico (suena a golpe al empezar el video)
-    if(x.i>0&&x.tr!=='cut')ev.push({spec:'whoosh',t:x.s+.05,o:{},score:x.type==='bigword'?8:5});
+    // cada transición con su sonido y su momento (iris abre más tarde, zoomblur y slice son secas)
+    const TRSFX={layers:['whoosh',.05,6],iris:['whoosh',.18,5],zoomblur:['zoom',0,6],slice:['whoosh',0,5],morph:['whoosh',.1,6]};
+    if(x.i>0&&x.tr!=='cut'){const [spec,at,score]=TRSFX[x.tr]||['whoosh',.05,5];ev.push({spec,t:x.s+at,o:{},score:x.type==='bigword'?8:score});}
+    if(x.type==='bigword'&&(x.p.v||(look.variants||{}).bigword)==='slam')ev.push({spec:'pop',t:x.s+(typeof x.p.at==='number'?x.p.at:.2)+.2,o:{},score:4});
     for(const [spec,at,score] of (AUTO[x.type]||(()=>[]))(p))if(at<x.e-x.s)ev.push({spec,t:x.s+at,o:{},score});}
   const MAX=cfg.sfx_max??6,SEP=Math.max(3,Math.min(6,total/(MAX*1.6)));const kept=ev.filter(e=>e.manual);
   for(const e of ev.filter(e=>!e.manual).sort((a,b)=>b.score-a.score||a.t-b.t)){if(kept.length>=MAX)break;if(kept.some(k=>Math.abs(k.t-e.t)<SEP))continue;kept.push(e);}
@@ -105,7 +117,7 @@ function build(WD){
     sfx.push({id,file,start:+start.toFixed(3),sin:+sin.toFixed(3),dur:+Math.min(e.o.dur||m.dur,m.dur-sin).toFixed(3),gain:+(e.o.gain??CAT.categories[m.cat].gain*(m.gain_adj||1)).toFixed(3),at:+e.t.toFixed(3),auto:!e.manual});}
   if(missing.size)console.warn('⚠️  Faltan sonidos de la librería (se omiten):',[...missing].join(', '));
   const scenes=sc.map(x=>({type:x.type,s:x.s,e:x.e,bg:x.bg,tr:x.tr,cap:x.cap,p:x.p,words:x.words}));
-  const tl={W,H,fps:FPS,total,brand,scenes,caps,capsOn,logoCorner:cfg.logo_corner,look,custom,brandSlug:cfg.brand||'editorial',hasLook:fs.existsSync(path.join(WD,'look.json'))};
+  const tl={cfg,snapped,W,H,fps:FPS,total,brand,scenes,caps,capsOn,logoCorner:cfg.logo_corner,look,custom,brandSlug:cfg.brand||'editorial',hasLook:fs.existsSync(path.join(WD,'look.json'))};
   fs.writeFileSync(path.join(WD,'timeline.json'),JSON.stringify(tl,null,1));
   fs.writeFileSync(path.join(WD,'sfx.json'),JSON.stringify(sfx,null,1));
   fs.writeFileSync(path.join(WD,'captions.json'),JSON.stringify(caps,null,1));
@@ -147,15 +159,22 @@ function review(tl,vo,WD){const w=[],err=[],S=tl.scenes;
   cc.forEach(x=>{const D=x.e-x.s;if(D<2.5||D>4.8)w.push(`la escena concept (${x.p.motif}) dura ${D.toFixed(1)} s: tiene que durar 3–4 s`);
     if(x.p.kick&&x.p.kick.length>24)w.push('la escena concept no debería tener texto (como mucho un kick muy corto)');});
   if(S[0].e>4)w.push(`el gancho dura ${S[0].e.toFixed(1)} s: el primer cambio de imagen tendría que llegar antes de los 3–4 s`);
+  // dirección creativa: tratamiento, estilo, escenas a medida, ritmo musical
+  if(tl.hasLook){if(!tl.look.tratamiento||/^\(/.test(String(tl.look.tratamiento)))w.push('look.json sin "tratamiento": escribir la idea madre del video y su objeto héroe (paso 3b de SKILL.md)');
+    if(!tl.look.estilo)w.push('look.json sin "estilo": generar el look con look.js new --estilo=… (reference/estilos.md)');}
+  const own_t=S.filter(x=>!BUILTIN_SC.has(x.type)||x.type==='concept').reduce((a,x)=>a+x.e-x.s,0)/tl.total;
+  if(own_t<.35)w.push(`solo ${Math.round(own_t*100)} % del tiempo en escenas a medida (concept + SC propias): la meta es ≥ 40 % (reference/recetas.md)`);
+  const trs=new Set(S.slice(1).map(x=>x.tr));if(S.length>6&&trs.size<3)w.push(`solo ${trs.size} transiciones distintas en todo el video: sumar alguna del estilo (layers, morph, zoomblur, slice, iris…)`);
+  if((tl.cfg.music||{}).path&&!fs.existsSync(path.join(WD,'beats.json')))w.push('hay música pero no beats.json: correr scripts/beats.py para que los cortes caigan en el ritmo');
   const n=S.length,T=tl.total;if(T/n>5.5)w.push(`${n} escenas en ${T.toFixed(0)} s (una cada ${(T/n).toFixed(1)} s): sumar escenas, el ritmo ideal es una cada 3–5 s`);
   return {w,err};}
 
-function plan(WD){const {tl,sfx,vo}=build(WD);
-  console.log(`Formato ${tl.W}×${tl.H} · duración ${tl.total.toFixed(1)} s · ${tl.scenes.length} escenas · subtítulos ${tl.capsOn?'sí':'no'}`);
+function plan(WD,compact){const {tl,sfx,vo}=build(WD);
+  console.log(`Formato ${tl.W}×${tl.H} · duración ${tl.total.toFixed(1)} s · ${tl.scenes.length} escenas · subtítulos ${tl.capsOn?'sí':'no'}${tl.snapped?` · ${tl.snapped} cortes en el golpe de la música`:''}`);
   if(tl.hasLook)console.log(`Look: ${tl.look.concepto||'(sin concepto)'} · decor ${(tl.look.decor||[]).map(d=>d.k||d).join('+')||'-'} · hl ${tl.look.hl||'box'} · panel ${tl.look.panel||'soft'} · movimiento ${tl.look.motion||'classic'}`);
   tl.scenes.forEach((x,i)=>console.log(`${String(i).padStart(2)} ${x.type.padEnd(9)} ${x.s.toFixed(2).padStart(6)}–${x.e.toFixed(2).padStart(6)} (${(x.e-x.s).toFixed(1)} s)  bg ${x.bg.padEnd(7)} tr ${x.tr.padEnd(6)} v ${String(x.p.v||(tl.look.variants||{})[x.type]||(BUILTIN_SC.has(x.type)?'-':'a medida')).padEnd(8)}${x.cap?'':' sin subt.'}  ${(x.p.lines||[x.p.kick||x.p.text||x.p.word||x.p.title||''])[0].toString().replace(/<[^>]+>/g,'').slice(0,40)}`));
-  console.log('SFX:\n'+(sfx.map(x=>`  ${x.at.toFixed(2).padStart(6)}  ${x.id.padEnd(16)} gain ${x.gain}${x.auto?'  (auto)':''}`).join('\n')||'  (ninguno)'));
-  const {w,err}=review(tl,vo,WD);console.log(w.length||err.length?'\nDirección:\n'+[...err.map(x=>'✗  '+x),...w.map(x=>'⚠️  '+x)].join('\n'):'\nDirección: ✓ sin avisos');}
+  console.log('SFX:'+(compact?' '+(sfx.map(x=>`${x.at.toFixed(1)} ${x.id}`).join(' · ')||'(ninguno)'):'\n'+(sfx.map(x=>`  ${x.at.toFixed(2).padStart(6)}  ${x.id.padEnd(16)} gain ${x.gain}${x.auto?'  (auto)':''}`).join('\n')||'  (ninguno)')));
+  const {w,err}=review(tl,vo,WD);console.log(w.length||err.length?'\nDirección:\n'+[...err.map(x=>'✗  '+x),...w.map(x=>'⚠️  '+x)].join('\n'):'\nDirección: ✓ sin avisos');return {w,err};}
 // el render final se frena si hay errores de dirección (concept reciclado o faltante); --force lo saltea
 function gate(tl,WD){if(process.argv.includes('--force'))return;const {err}=review(tl,null,WD);if(err.length)throw new Error('Dirección:\n'+err.map(x=>'  ✗ '+x).join('\n')+'\n(corregir, o --force)');}
 
@@ -167,19 +186,24 @@ async function withPages(tl,n,fn){if(!CHROME)throw new Error('No encuentro Chrom
     await pg.goto(fileURL(path.join(ENG,'engine.html')));if(tl.custom)await pg.addScriptTag({path:tl.custom});const fits=await pg.evaluate(c=>init(c),tl);const r=await fn(pg,k,fits);await pg.close();return r;}));}
   finally{await br.close();}}
 
-async function test(WD){const {tl}=build(WD);const dir=path.join(WD,'test');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});
-  const at=arg('at')||'end';
+async function test(WD,atOpt){const {tl}=build(WD);const dir=path.join(WD,'test');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});
+  const at=atOpt||arg('at')||'end';
   await withPages(tl,1,async(pg,k,fits)=>{fits.filter(f=>f.scale<.62).forEach(f=>console.warn(`⚠️  escena ${f.i} (${f.type}) se achicó al ${Math.round(f.scale*100)} %: demasiado texto, acortar`));
     for(const [i,x] of tl.scenes.entries()){const D=x.e-x.s;const ts=at==='end'?[x.e-.12]:at.split(',').map(v=>x.s+(v==='mid'?D/2:v==='end'?D-.12:+v));
       for(const [j,t] of ts.entries()){await pg.evaluate(t=>frame(t),t);await pg.screenshot({path:path.join(dir,`${String(i).padStart(2,'0')}${ts.length>1?'_'+j:''}.jpg`),type:'jpeg',quality:80});}}});
-  const files=fs.readdirSync(dir).filter(f=>f.endsWith('.jpg')).sort();const cols=Math.min(6,files.length),sw=tl.W>tl.H?480:300;
+  const files=fs.readdirSync(dir).filter(f=>f.endsWith('.jpg')).sort();const per=at==='end'?1:at.split(',').length,cols=per>1&&per<=6?per:Math.min(6,files.length),sw=Math.max(120,Math.min(tl.W>tl.H?480:300,Math.floor((1400-6*(cols+1))/cols)));   // una fila por escena; hoja ≤ 1400 px de ancho
   const list=path.join(dir,'list.txt');fs.writeFileSync(list,files.map(f=>`file '${path.join(dir,f).replace(/'/g,"'\\''")}'`).join('\n'));
-  const out=path.join(WD,'sheet.jpg');spawnSync('ffmpeg',['-v','error','-y','-f','concat','-safe','0','-i',list,'-vf',`scale=${sw}:-2,tile=${cols}x${Math.ceil(files.length/cols)}:padding=6:color=0x222222`,'-frames:v','1','-update','1',out]);
-  console.log('hoja:',out,`(${files.length} cuadros, en orden de escena)`);}
+  const out=path.join(WD,'sheet.jpg');spawnSync('ffmpeg',['-v','error','-y','-f','concat','-safe','0','-i',list,'-vf',`scale=${sw}:-2,tile=${cols}x${Math.ceil(files.length/cols)}:padding=6:color=0x222222,scale='min(1400,iw)':-2`,'-frames:v','1','-update','1',out]);
+  console.log('hoja:',out,`(${files.length} cuadros, en orden de escena${per>1?`, ${per} por escena (una fila cada una)`:''})`);return out;}
+
+// --check: plan + hoja de prueba en una corrida (reusa plan() y test())
+async function check(WD){const t0=Date.now();const {err}=plan(WD,true);
+  await test(WD,arg('at')||'0.06,0.18,0.35,mid,end');
+  console.log(`✓ check en ${((Date.now()-t0)/1000).toFixed(0)} s${err.length?` · ${err.length} error(es) de Dirección (✗) a corregir antes del render final`:''}`);if(err.length)process.exitCode=1;}
 
 async function full(WD){const t0=Date.now();const {tl}=build(WD);gate(tl,WD);const par=+(arg('par')||Math.min(6,Math.max(2,os.cpus().length-2)));
   const nf=Math.ceil(tl.total*tl.fps),per=Math.ceil(nf/par),dir=path.join(WD,'chunks');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});
-  let done=0;const tick=setInterval(()=>process.stdout.write(`\r  ${done}/${nf} cuadros`),2000);
+  let done=0;console.log(`render: ${nf} cuadros (${tl.W}×${tl.H}, ${par} en paralelo)…`);const tick=setInterval(()=>VERBOSE&&process.stdout.write(`\r  ${done}/${nf} cuadros`),2000);
   await withPages(tl,par,async(pg,k)=>{const a=k*per,b=Math.min(nf,a+per);if(a>=b)return;
     const out=path.join(dir,`c${String(k).padStart(2,'0')}.mp4`);
     const ff=spawn('ffmpeg',['-v','error','-y','-f','image2pipe','-framerate',String(tl.fps),'-c:v','mjpeg','-i','-','-c:v','libx264','-preset','medium','-crf','17','-pix_fmt','yuv420p','-r',String(tl.fps),out]);
@@ -191,10 +215,10 @@ async function full(WD){const t0=Date.now();const {tl}=build(WD);gate(tl,WD);con
   fs.writeFileSync(list,chunks.map(f=>`file '${path.join(dir,f).replace(/'/g,"'\\''")}'`).join('\n'));
   const out=path.join(WD,'video.mp4');const r=spawnSync('ffmpeg',['-v','error','-y','-f','concat','-safe','0','-i',list,'-c','copy',out]);
   if(r.status)throw new Error('falló la unión de partes');fs.rmSync(dir,{recursive:true,force:true});
-  const secs=(Date.now()-t0)/1000;console.log(`\n✓ ${out} (${nf} cuadros en ${secs.toFixed(0)} s)`);logTime(WD,'Render de video',secs);}
+  const secs=(Date.now()-t0)/1000;console.log(`${VERBOSE?'\n':''}✓ ${out} (${nf} cuadros en ${secs.toFixed(0)} s)`);logTime(WD,'Render de video',secs);}
 
 // ───── capas para Premiere: una .mov por escena (opaca, con su transición de entrada ya compuesta), subtítulos con alfa por escena y overlay ─────
-const TRD={wipe:.5,slide:.55,circle:.6,zoom:.55,push:.55,cut:0,wipex:.5,split:.55,diag:.55,shape:.65,blinds:.6};
+const TRD={wipe:.5,slide:.55,circle:.6,zoom:.55,push:.55,cut:0,wipex:.5,split:.55,diag:.55,shape:.65,blinds:.6,layers:.7,iris:.5,zoomblur:.4,slice:.45,morph:.65};   // igual que engine.html
 async function premiere(WD){const t0=Date.now();const {cfg,tl}=build(WD);gate(tl,WD);const F=tl.fps,A=path.join(cfg.out_dir,'Assets');
   const only=arg('only')?new Set(arg('only').split(',').map(x=>isNaN(x)?x:+x)):null;const S=tl.scenes,jobs=[];
   const pad=n=>String(n).padStart(2,'0'),fr=t=>Math.round(t*F);
@@ -207,7 +231,7 @@ async function premiere(WD){const t0=Date.now();const {cfg,tl}=build(WD);gate(tl
   const todo=jobs.filter(j=>j.n>0&&ok(j));
   ['Escenas','Subtitulos','Overlay'].forEach(d=>fs.mkdirSync(path.join(A,d),{recursive:true}));
   const par=+(arg('par')||Math.min(6,Math.max(2,os.cpus().length-2)));let q=0,done=0;const nf=todo.reduce((a,j)=>a+j.n,0);
-  const tick=setInterval(()=>process.stdout.write(`\r  ${done}/${nf} cuadros`),2000);
+  console.log(`premiere: ${todo.length} clips (${nf} cuadros)…`);const tick=setInterval(()=>VERBOSE&&process.stdout.write(`\r  ${done}/${nf} cuadros`),2000);
   await withPages(tl,Math.min(par,todo.length||1),async pg=>{while(q<todo.length){const j=todo[q++];
     const al=j.kind!=='scene',enc=al?['-c:v','prores_ks','-profile:v','4','-pix_fmt','yuva444p10le']:['-c:v','prores_ks','-profile:v','3','-pix_fmt','yuv422p10le'];
     const ff=spawn('ffmpeg',['-v','error','-y','-f','image2pipe','-framerate',String(F),'-c:v',al?'png':'mjpeg','-i','-',...enc,'-vendor','apl0','-r',String(F),j.file]);
@@ -218,7 +242,7 @@ async function premiere(WD){const t0=Date.now();const {cfg,tl}=build(WD);gate(tl
   clearInterval(tick);
   fs.writeFileSync(path.join(WD,'premiere.json'),JSON.stringify({W:tl.W,H:tl.H,fps:F,total:tl.total,frames:fr(tl.total),
     clips:jobs.filter(j=>j.n>0).map(({opt,...j})=>({...j,label:j.kind==='scene'?`${j.name} · ${String((S[j.i].p.lines||[S[j.i].p.kick||S[j.i].p.text||S[j.i].p.word||''])[0]).replace(/<[^>]+>/g,'').slice(0,40)}`:j.name}))},null,1));
-  const secs=(Date.now()-t0)/1000;console.log(`\n✓ ${todo.length} clips en ${A} (${secs.toFixed(0)} s) → ahora: build_xml.py`);logTime(WD,'Render de capas para Premiere',secs);}
+  const secs=(Date.now()-t0)/1000;console.log(`${VERBOSE?'\n':''}✓ ${todo.length} clips en ${A} (${secs.toFixed(0)} s) → ahora: build_xml.py`);logTime(WD,'Render de capas para Premiere',secs);}
 
 async function lookPreview(WD){const cfg=JSON.parse(fs.readFileSync(path.join(WD,'config.json'),'utf8'));const [W,H]=FORMATS[cfg.format||'9:16'];
   const brand=loadBrand(cfg.brand||'editorial'),look=loadLook(WD,brand),custom=fs.existsSync(path.join(WD,'scenes.js'))?path.join(WD,'scenes.js'):null;
@@ -234,7 +258,7 @@ async function lookPreview(WD){const cfg=JSON.parse(fs.readFileSync(path.join(WD
   tl.caps=sc.map((x,i)=>({s:i*3,e:i*3+3,words:'así se ven los subtítulos'.split(' ').map((w,k)=>({w,s:i*3+k*.2,e:i*3+k*.2+.2,k:k===3}))}));
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'lp')),out=path.join(WD,'look.jpg');
   await withPages(tl,1,async pg=>{for(let i=0;i<N;i++){await pg.evaluate(t=>frame(t),i*3+2.9);await pg.screenshot({path:path.join(dir,`${i}.jpg`),type:'jpeg',quality:85});}});
-  spawnSync('ffmpeg',['-v','error','-y','-i',path.join(dir,'%d.jpg'),'-vf',`scale=${W>H?640:360}:-2,tile=${W>H?3:6}x${W>H?2:1}:padding=8:color=0x222222`,'-frames:v','1','-update','1',out]);
+  spawnSync('ffmpeg',['-v','error','-y','-i',path.join(dir,'%d.jpg'),'-vf',`scale=${W>H?640:360}:-2,tile=${W>H?3:6}x${W>H?2:1}:padding=8:color=0x222222,scale='min(1400,iw)':-2`,'-frames:v','1','-update','1',out]);
   fs.rmSync(dir,{recursive:true,force:true});console.log('look:',out);}
 
 async function brandPreview(slug,out,fmt){const [W,H]=FORMATS[fmt||'9:16'];const brand=loadBrand(slug);
@@ -246,10 +270,10 @@ async function brandPreview(slug,out,fmt){const [W,H]=FORMATS[fmt||'9:16'];const
   tl.caps=sc.map((x,i)=>({s:i*3,e:i*3+3,words:'así se ven los subtítulos'.split(' ').map((w,k)=>({w,s:i*3+k*.2,e:i*3+k*.2+.2,k:k===3}))}));
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bp'));
   await withPages(tl,1,async pg=>{for(let i=0;i<4;i++){await pg.evaluate(t=>frame(t),i*3+2.9);await pg.screenshot({path:path.join(dir,`${i}.jpg`),type:'jpeg',quality:85});}});
-  spawnSync('ffmpeg',['-v','error','-y','-i',path.join(dir,'%d.jpg'),'-vf',`scale=${W>H?640:400}:-2,tile=${W>H?2:4}x${W>H?2:1}:padding=8:color=0x222222`,'-frames:v','1','-update','1',out]);
+  spawnSync('ffmpeg',['-v','error','-y','-i',path.join(dir,'%d.jpg'),'-vf',`scale=${W>H?640:400}:-2,tile=${W>H?2:4}x${W>H?2:1}:padding=8:color=0x222222,scale='min(1400,iw)':-2`,'-frames:v','1','-update','1',out]);
   console.log('muestra:',out);}
 
 (async()=>{const bp=arg('brand-preview');if(bp)return brandPreview(bp,arg('out')||path.join(process.cwd(),`marca_${path.basename(bp)}.jpg`),arg('format'));
   const WD=path.resolve(process.argv[2]);
   if(process.argv.includes('--look-preview'))return lookPreview(WD);
-  if(process.argv.includes('--plan'))plan(WD);else if(process.argv.includes('--premiere'))await premiere(WD);else if(process.argv.includes('--test'))await test(WD);else await full(WD);})().catch(e=>{console.error('✗',e.message);process.exit(1);});
+  if(process.argv.includes('--check'))await check(WD);else if(process.argv.includes('--plan'))plan(WD);else if(process.argv.includes('--premiere'))await premiere(WD);else if(process.argv.includes('--test'))await test(WD);else await full(WD);})().catch(e=>{console.error('✗',e.message);process.exit(1);});

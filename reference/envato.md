@@ -15,3 +15,6 @@ La vista previa de Envato tiene marca de agua audible: siempre intentar entregar
 6. Avisar si la página dice **"No está listo para ver Claim Clear"**: en YouTube puede aparecer un reclamo de Content ID que se resuelve con la licencia (en Instagram/TikTok no afecta).
 
 Si no hay navegador o el usuario no quiere: darle el link para que lo baje él y después `envato.py collect "<work>"`.
+
+## Elegir la música según el tono
+Urgente o dato duro → enérgica, Upbeat 110–140 BPM · empático, salud, cuidado → cálida/inspiradora, Medium 90–110 · institucional o explicativo → corporativa tranquila · humor → juguetona. Preferir energía pareja (sin caídas largas); si la música es más corta que el video se repite sola. `offset` = segundo donde entra la parte con energía (mirar el perfil ▁▂▃█ de la búsqueda).

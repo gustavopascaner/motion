@@ -15,3 +15,9 @@ Si la pega en el chat, guardarla así y sugerir rotarla después.
 ## Detalles técnicos
 - edge-tts usa el servicio de voz de Microsoft Edge (requiere internet, sin clave).
 - ElevenLabs: `{"engine":"eleven","id":"<voice_id>"}`; clave en `ELEVENLABS_API_KEY` o `~/.config/motion/elevenlabs_key`. Cada beat se genera con el anterior y el siguiente como contexto (entonación continua) y queda en caché: solo se cobran los beats que cambian (≈1000 caracteres por minuto de guion).
+
+## tts.py: detalles del paso 2 (leer solo si hace falta)
+- **Voz > 2 min**: no recortar ni acelerar solos; proponer recortes concretos al usuario y esperar respuesta. Más corta está bien (no estirar el guion; se puede bajar `rate` hasta `-5%` si suena apurada).
+- **Una sola voz**: `tts.py` bloquea la voz en `<work>/voice.lock.json` y rechaza otra voz o una voz por beat. Si ElevenLabs falla (sin créditos, sin clave, error): frenar y avisar, nunca completar con otra voz. Cambiar de voz = `tts.py "<work>" --cambiar-voz` (regenera todo) y después render + mix.
+- **Beats**: 1 frase o idea, 2–6 s (≈10–18 por minuto); partir los de más de 7 s. `say` = pronunciación (números "70 %" → "setenta por ciento", siglas "OMS" → "o eme ese", años, símbolos); `text` queda como está escrito y es lo que muestran subtítulos y SRT; `w()` encuentra ambas formas. `pause` = silencio tras el beat (default 0,38 s si termina en punto/pregunta, 0,18 s si no; 0,6 antes de un remate o del CTA).
+- `script.json`: `{"voice":{"id":"mujer"},"lead":0.35,"beats":[{"id":"b01","text":"…","say":"…","pause":0.6},…]}`; ritmo con `"rate"` (edge) o `"speed"` (ElevenLabs). Solo se regeneran los beats que cambian (caché).

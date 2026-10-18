@@ -58,11 +58,45 @@ const E={o3:x=>1-Math.pow(1-x,3),expo:x=>x>=1?1:1-Math.pow(2,-10*x),
 function h(tag,css,parent,html,cls){const e=document.createElement(tag);if(css)e.style.cssText=css;if(cls)e.className=cls;if(html!=null)e.innerHTML=html;(parent||S).appendChild(e);return e}
 function ml(parent,html,css,cls){const m=h('div',css||'',parent,null,'m '+(cls||''));return h('div','',m,html)}
 // personalidad de movimiento del look (snappy · smooth · bouncy); M.d escala duraciones
-const MOTION={classic:{d:1,ease:E.expo,pop:E.back},snappy:{d:.72,ease:E.expo,pop:E.back},smooth:{d:1.3,ease:E.o3,pop:E.o3},bouncy:{d:1.05,ease:E.back,pop:E.el}};
+// resortes: k = amortiguación, f = oscilaciones; termina exacto en 1 (corrección lineal del resto)
+const spr=(k,f)=>x=>x<=0?0:x>=1?1:1-(Math.exp(-k*x)*Math.cos(x*f*2*Math.PI)-x*Math.exp(-k)*Math.cos(f*2*Math.PI));
+E.spring=spr(6,1.6);E.punch=spr(7,1.2);E.elastic=spr(4.2,2.4);
+const sp=(t,a,d=.6)=>E.spring(P(t,a,d));   // progreso con resorte (sobrepasa ~15 % y se asienta)
+// punch: rápido, fuerte, overshoot chico · elastic: resortes visibles. cap = cuánto puede sobrepasar rise() (en %) sin cortar el texto en su máscara
+const MOTION={classic:{d:1,ease:E.expo,pop:E.back},snappy:{d:.72,ease:E.expo,pop:E.back},smooth:{d:1.3,ease:E.o3,pop:E.o3},bouncy:{d:1.05,ease:E.back,pop:E.el},
+ punch:{d:.6,ease:E.punch,pop:E.spring,cap:60},elastic:{d:1.1,ease:spr(6.5,1.7),pop:E.elastic,cap:50}};
 let M=MOTION.classic,LOOK={},CUR=0;
-function rise(el,t,a,d=.55){const x=M.ease(P(t,a,d*M.d));el.style.transform=`translateY(${(1-x)*140}%)`;}
-function popIn(el,t,a,d=.45){const x=M.pop(P(t,a,d*M.d));el.style.opacity=P(t,a,.1);el.style.transform=`translateY(${(1-x)*40}px) scale(${L(.8,1,x)})`;}
-function fadeUp(el,t,a,d=.4){const x=E.o3(P(t,a,d*M.d));el.style.opacity=x;el.style.transform=`translateY(${(1-x)*24}px)`;}
+// tokens de movimiento moderno (ausentes = 0 → diseño clásico idéntico): look.blur 0–1 · look.depth 0|1 · look.punch 0–1
+let BLUR=0,DEPTH=0,PUNCH=0,MBN=0;const MBMAX=10;   // MBMAX: elementos con desenfoque por cuadro (las transiciones no cuentan)
+const DT=()=>1/((typeof CFG!=='undefined'&&CFG&&CFG.fps)||30);
+const ST=(i,step=.08)=>i*step*M.d;   // escalonado: a + ST(i) = inicio del ítem i
+// sacudida breve que se apaga: devuelve [dx,dy] en px → el.style.translate=`${dx}px ${dy}px`
+function shake(t,at,amp=14,dur=.32){const q=t-at;if(q<0||q>dur)return [0,0];const e=Math.pow(1-q/dur,2);return [Math.sin(q*95)*amp*e,Math.cos(q*77)*amp*.6*e];}
+// desenfoque de movimiento direccional: filtros SVG (stdDeviation x y) cuantizados y reutilizables
+let mbDefs=null;const mbSeen=new Set();
+function mbFilter(x,y){const id=`mb${x}_${y}`;if(!mbSeen.has(id)){mbSeen.add(id);
+  if(!mbDefs){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('style','position:absolute;width:0;height:0');s.setAttribute('aria-hidden','true');
+   mbDefs=document.createElementNS('http://www.w3.org/2000/svg','defs');s.appendChild(mbDefs);document.body.appendChild(s);}
+  const f=document.createElementNS('http://www.w3.org/2000/svg','filter');f.id=id;for(const [k,v] of Object.entries({x:'-30%',y:'-30%',width:'160%',height:'160%','color-interpolation-filters':'sRGB'}))f.setAttribute(k,v);
+  const g=document.createElementNS('http://www.w3.org/2000/svg','feGaussianBlur');g.setAttribute('stdDeviation',`${x} ${y}`);f.appendChild(g);mbDefs.appendChild(f);}
+ return `url(#${id})`;}
+// mb(el,dx,dy): dx/dy = desplazamiento del elemento en este cuadro (px). Sin look.blur no hace nada. force = no cuenta para el tope por cuadro
+function mb(el,dx,dy,force){if(!BLUR||!el)return;const k=.42*BLUR,q=v=>Math.min(36,Math.round(Math.abs(v)*k/2)*2);const x=q(dx),y=q(dy);
+ if((x<2&&y<2)||(!force&&MBN>=MBMAX)){if(el._mb){el.style.filter='';el._mb=0;}return;}
+ if(!force)MBN++;el.style.filter=mbFilter(x,y);el._mb=1;}
+const hOf=el=>el._h||(el._h=el.offsetHeight);
+function rise(el,t,a,d=.55){const D_=d*M.d,x=M.ease(P(t,a,D_)),y=v=>v>1&&M.cap?(1-v)*M.cap:(1-v)*140;
+ el.style.transform=DEPTH&&P(t,a,D_)<1?`perspective(900px) translateY(${y(x)}%) rotateX(${(1-cl(x))*-55}deg)`:`translateY(${y(x)}%)`;
+ if(BLUR)mb(el,0,(y(M.ease(P(t-DT(),a,D_)))-y(x))/100*hOf(el));}
+function popIn(el,t,a,d=.45){const D_=d*M.d,x=M.pop(P(t,a,D_));el.style.opacity=P(t,a,.1);
+ el.style.transform=DEPTH&&P(t,a,D_)<1?`perspective(1200px) translateY(${(1-x)*40}px) translateZ(${-(1-cl(x))*260}px) rotateX(${(1-cl(x))*34}deg) rotateY(${(1-cl(x))*-12}deg) scale(${L(.8,1,x)})`:`translateY(${(1-x)*40}px) scale(${L(.8,1,x)})`;
+ if(BLUR)mb(el,0,(x-M.pop(P(t-DT(),a,D_)))*(40+.2*hOf(el)));}
+function fadeUp(el,t,a,d=.4){const D_=d*M.d,x=E.o3(P(t,a,D_));el.style.opacity=x;
+ el.style.transform=DEPTH&&x<1?`perspective(900px) translateY(${(1-x)*24}px) rotateX(${(1-x)*28}deg)`:`translateY(${(1-x)*24}px)`;
+ if(BLUR)mb(el,0,(x-E.o3(P(t-DT(),a,D_)))*24);}
+// giros 3D explícitos (funcionan siempre, con o sin look.depth): flipIn = tarjeta que gira en Y · fold = se despliega desde arriba
+function flipIn(el,t,a,d=.6){const x=M.pop(P(t,a,d*M.d));el.style.opacity=P(t,a,.12);el.style.transform=`perspective(1100px) rotateY(${(1-x)*88}deg) scale(${L(.9,1,cl(x))})`;}
+function fold(el,t,a,d=.6){const x=M.pop(P(t,a,d*M.d));el.style.opacity=P(t,a,.12);el.style.transformOrigin='50% 0';el.style.transform=`perspective(1100px) rotateX(${(1-x)*-92}deg)`;}
 // kick según el look: dot · line · number (n.º de escena) · bracket · tag · plain
 function kick(parent,txt){const k=LOOK.kick||'dot',n=String(CUR+1).padStart(2,'0');
  const html=k==='line'?`<span class="ln"></span>${txt}`:k==='number'?`<span class="nm">${n}</span>${txt}`:k==='bracket'?`<span class="nm">[</span>${txt}<span class="nm">]</span>`:k==='tag'||k==='plain'?txt:`<span class="dot"></span>${txt}`;
@@ -129,12 +163,32 @@ function fit(sc){const a=sc.area,fb=sc.fitbox,box=sc.box,max=sc.p.maxScale||((a.
  fb.style.top=(a.y+(va==='top'?0:va==='bottom'?a.h-hh:(a.h-hh)/2))+'px';sc.scale=s;if(!ok)console.warn('no entra',sc.i,sc.type);}
 
 // ───────── transiciones ─────────
-const TRD={wipe:.5,slide:.55,circle:.6,zoom:.55,push:.55,cut:0,wipex:.5,split:.55,diag:.55,shape:.65,blinds:.6};
-const VEILED=new Set(['wipe','wipex','shape']);
+const TRD={wipe:.5,slide:.55,circle:.6,zoom:.55,push:.55,cut:0,wipex:.5,split:.55,diag:.55,shape:.65,blinds:.6,layers:.7,iris:.5,zoomblur:.4,slice:.45,morph:.65};
+const VEILED=new Set(['wipe','wipex','shape','iris','slice','morph']);
+// velocidad (px por cuadro) de una curva de transición: f(t) en 0–1 · escala px
+const vel=(f,t,px)=>(f(t)-f(t-DT()))*px;
+// layers: borde inclinado que barre (dir alterna según la escena)
+const sweep=(v,dir,s=.28)=>{const X=v*(1+s)*100,Y=(v*(1+s)-s)*100;return dir?`polygon(100% 0,${100-X}% 0,${100-Y}% 100%,100% 100%)`:`polygon(0 0,${X}% 0,${Y}% 100%,0 100%)`;};
+// slice: franjas horizontales que se completan escalonadas desde lados alternos
+function sliceMask(el,t,lead){const N=H>W?6:5,hh=Math.ceil(H/N)+1,imgs=[],pos=[];let full=true;
+ for(let k=0;k<N;k++){const x=E.expo(P(t,lead+[0,2,1,3,1,2][k%6]*.04,.3)),pc=(x*100).toFixed(2);if(x<1)full=false;imgs.push(`linear-gradient(${k%2?270:90}deg,#000 ${pc}%,transparent ${pc}%)`);pos.push(`0 ${Math.round(k*H/N)}px`);}
+ if(full){el.style.maskImage='none';return;}el.style.maskImage=imgs.join(',');el.style.maskSize=`${W}px ${hh}px`;el.style.maskPosition=pos.join(',');el.style.maskRepeat='no-repeat';}
+// morph: rectángulo redondeado que va de la forma de origen (sc.mo) a toda la pantalla
+const morphClip=(m,v)=>`inset(${L(m.y,0,v)}px ${L(W-m.x-m.w,0,v)}px ${L(H-m.y-m.h,0,v)}px ${L(m.x,0,v)}px round ${L(Math.min(m.w,m.h)/2,0,v)}px)`;
 function trIn(sc,t){const a=sc.tr,n=sc.inner;
- if(a==='wipe'){const x=E.expo(P(t,0,.42)),y=E.expo(P(t,.08,.45));sc.veil.style.clipPath=`inset(${(1-x)*100}% 0 0 0)`;n.style.clipPath=`inset(${(1-y)*100}% 0 0 0)`;sc.cam.style.translate=`0 ${(1-y)*120}px`;}
- else if(a==='slide'){const x=E.expo(P(t,0,.55));n.style.transform=`translateX(${(1-x)*100}%)`;}
- else if(a==='push'){const x=E.expo(P(t,0,.55));n.style.transform=`translateY(${(1-x)*100}%)`;}
+ if(a==='wipe'){const x=E.expo(P(t,0,.42)),y=E.expo(P(t,.08,.45));sc.veil.style.clipPath=`inset(${(1-x)*100}% 0 0 0)`;n.style.clipPath=`inset(${(1-y)*100}% 0 0 0)`;sc.cam.style.translate=`0 ${(1-y)*120}px`;
+  if(BLUR)mb(sc.cam,0,vel(q=>E.expo(P(q,.08,.45)),t,120),1);}
+ else if(a==='slide'){const x=E.expo(P(t,0,.55));n.style.transform=`translateX(${(1-x)*100}%)`;if(BLUR)mb(n,vel(q=>E.expo(P(q,0,.55)),t,W),0,1);}
+ else if(a==='push'){const x=E.expo(P(t,0,.55));n.style.transform=`translateY(${(1-x)*100}%)`;if(BLUR)mb(n,0,vel(q=>E.expo(P(q,0,.55)),t,H),1);}
+ else if(a==='layers'){const dir=sc.i%2,f=q=>E.expo(P(q,.2,.45)),y=f(t);sc.lay.forEach((e,k)=>{const x=E.expo(P(t,k*.1,.42));e.style.clipPath=x>=1?'none':sweep(x,dir);});
+  n.style.clipPath=y>=1?'none':sweep(y,dir);sc.cam.style.translate=`${(1-y)*(dir?140:-140)}px 0`;if(BLUR)mb(sc.cam,vel(f,t,140),0,1);}
+ else if(a==='iris'){const cx=sc.p.cx??50,cy=sc.p.cy??50,R=Math.hypot(Math.max(cx,100-cx)*W/100,Math.max(cy,100-cy)*H/100)*1.05+2;
+  const x=E.io(P(t,0,.24)),y=E.expo(P(t,.2,.32)),r=(1-x)*R;
+  sc.veil.style.maskImage=x>=1?'none':`radial-gradient(circle at ${cx}% ${cy}%,transparent ${r.toFixed(1)}px,#000 ${(r+1.5).toFixed(1)}px)`;
+  n.style.clipPath=y>=1?'none':`circle(${(y*R).toFixed(1)}px at ${cx}% ${cy}%)`;}
+ else if(a==='zoomblur'){const x=E.expo(P(t,0,.4)),b=(1-x)*28;n.style.opacity=P(t,0,.12);n.style.transform=`scale(${L(1.45,1,x)})`;n.style.filter=b>.4?`blur(${b.toFixed(1)}px)`:'';}
+ else if(a==='slice'){sliceMask(sc.veil,t,0);sliceMask(n,t,.09);const f=q=>E.expo(P(q,.09,.42));sc.cam.style.translate=`${(1-f(t))*-90}px 0`;if(BLUR)mb(sc.cam,vel(f,t,90),0,1);}
+ else if(a==='morph'){const m=sc.mo,x=E.io(P(t,0,.42)),y=E.io(P(t,.16,.46));sc.veil.style.clipPath=x>=1?'none':morphClip(m,x);n.style.clipPath=y>=1?'none':y<=0?'inset(50%)':morphClip(m,y);}
  else if(a==='circle'){const x=E.io(P(t,0,.6));n.style.clipPath=x>=1?'none':`circle(${x*150}% at ${sc.p.cx||50}% ${sc.p.cy||50}%)`;}
  else if(a==='zoom'){const x=E.expo(P(t,0,.55));n.style.opacity=P(t,0,.25);n.style.transform=`scale(${L(1.25,1,x)})`;}
  else if(a==='wipex'){const x=E.expo(P(t,0,.42)),y=E.expo(P(t,.08,.45));sc.veil.style.clipPath=`inset(0 ${(1-x)*100}% 0 0)`;n.style.clipPath=`inset(0 ${(1-y)*100}% 0 0)`;sc.cam.style.translate=`${(1-y)*-120}px 0`;}
@@ -145,7 +199,11 @@ function trIn(sc,t){const a=sc.tr,n=sc.inner;
  else if(a==='blinds'){const x=E.o3(P(t,0,.6)),pw=W/9;n.style.maskImage=x>=1?'none':`repeating-linear-gradient(90deg,#000 0 ${x*pw}px,transparent ${x*pw}px ${pw}px)`;}}
 function trOut(sc,nx,t){const x=E.expo(P(t,0,TRD[nx.tr]||.5));   // t = tiempo local de la escena entrante
  if(nx.tr==='slide')sc.inner.style.transform=`translateX(${-x*35}%)`;else if(nx.tr==='push')sc.inner.style.transform=`translateY(${-x*45}%)`;
- else sc.inner.style.transform=`scale(${L(1,.94,x)})`;}
+ else if(nx.tr==='zoomblur'){const b=x*22;sc.inner.style.transform=`scale(${L(1,1.35,x)})`;sc.inner.style.filter=b>.4&&x<1?`blur(${b.toFixed(1)}px)`:'';}
+ else if(nx.tr==='morph'&&nx.mo){const m=nx.mo;sc.inner.style.transformOrigin=`${m.x+m.w/2}px ${m.y+m.h/2}px`;sc.inner.style.transform=`scale(${L(1,1.18,E.io(P(t,0,.6)))})`;}
+ else if(nx.tr==='layers'||nx.tr==='slice')sc.inner.style.transform=`translateX(${x*(nx.tr==='layers'&&nx.i%2?8:-8)}%) scale(${L(1,.96,x)})`;
+ else sc.inner.style.transform=`scale(${L(1,.94,x)})`;
+ if(BLUR&&(nx.tr==='slide'||nx.tr==='push')){const v=vel(q=>E.expo(P(q,0,TRD[nx.tr])),t,nx.tr==='slide'?W*.35:H*.45);mb(sc.inner,nx.tr==='slide'?v:0,nx.tr==='push'?v:0,1);}}
 
 // ───────── escenas ─────────
 // Cada escena: SC.tipo=(p,c)=>(t=>{...}) · c={box,inner,root,D,words,th,area,port}. Ver reference/escenas.md
@@ -157,6 +215,13 @@ function syncWords(tokens,words,start=0){let k=0;let last=start;return tokens.ma
  if(tt==null)tt=last+.12;last=tt;return tt;});}
 // Variantes de layout: p.v (o look.variants[tipo]); la primera de cada lista es el diseño clásico. Ver reference/escenas.md
 SC.title=(p,c)=>{const b0=c.box,v=VAR(p,c,'stack'),al=AL(b0,p,c);
+ if(v==='mask'){const k=p.kick?kick(b0,p.kick):null,at=p.at||[];   // cada línea la revela una barra del color de resaltado que barre
+  const ls=p.lines.map((s,i)=>{const l=ml(b0,`<span style="position:relative;display:inline-block"><span>${s}</span><i style="position:absolute;left:-.04em;right:-.04em;top:.06em;bottom:.02em;background:var(--hl)"></i></span>`,`font-size:${p.size||170}px;margin-top:${i?0:k?30:0}px`,'disp nw');
+   const sp_=l.firstChild;return {tx:sp_.firstChild,bar:sp_.lastChild};});
+  const sub=p.sub?ml(b0,p.sub,`font-size:${p.subSize||78}px;margin-top:34px;color:var(--hl)`,'acc'):null;
+  return t=>{if(k)fadeUp(k,t,.15);ls.forEach((o,i)=>{const a=at[i]??(.2+i*.14),d=.32*M.d,x=M.ease(P(t,a,d)),y=E.io(P(t,a+d+.04,d));
+    o.tx.style.opacity=t>=a+d*.85?1:0;o.bar.style.transformOrigin=t<a+d+.04?'0 50%':'100% 50%';o.bar.style.transform=`scaleX(${t<a+d+.04?Math.max(0,x):1-y})`;});
+   if(sub)rise(sub,t,p.subAt??Math.max(.4+ls.length*.14,...at.filter(x=>typeof x==='number'))+.45);};}
  const b=v==='framed'?h('div','padding:56px 60px 64px;box-shadow:inset 0 0 0 6px var(--hl);border-radius:calc(var(--r)*.5);display:flex;flex-direction:column',b0):b0;
  const k=p.kick?kick(b,p.kick):null;
  const ls=p.lines.map((s,i)=>ml(b,s,`font-size:${p.size||170}px;margin-top:${i?0:k?30:0}px`+(v==='offset'?`;padding-${al==='right'?'right':'left'}:${i*.5}em${i%2&&!/</.test(s)?';color:var(--hl)':''}`:''),'disp nw'));
@@ -165,15 +230,30 @@ SC.title=(p,c)=>{const b0=c.box,v=VAR(p,c,'stack'),al=AL(b0,p,c);
   if(k)fadeUp(k,t,.15);ls.forEach((l,i)=>rise(l,t,at[i]??(.2+i*.1),.6));if(sub)rise(sub,t,p.subAt??(.4+ls.length*.1));};};
 SC.kinetic=(p,c)=>{const b=c.box,v=VAR(p,c,'rise'),al=AL(b,p,c),txt=p.text||c.words.map(w=>w.w).join(' ');const hl=new Set((p.hl||[]).map(norm)),hc=new Set((p.hc||[]).map(norm));
  const k=p.kick?kick(b,p.kick):null;if(k)k.style.marginBottom='30px';
- const wrap=h('div',`font-size:${p.size||150}px;text-align:${al};line-height:1`,b,null,'disp');
+ const blk=v==='stackup';   // stackup: una palabra por línea, grandes, alternando color
+ const wrap=h('div',`font-size:${p.size||(blk?200:150)}px;text-align:${al};line-height:${blk?.94:1}`,b,null,'disp');
  const toks=txt.split(/\s+/).filter(Boolean);const tt=syncWords(toks,c.words,.15);
- const ws=toks.map((w,i)=>{const m=h('span','display:inline-block;overflow:'+(v==='rise'?'hidden':'visible')+';vertical-align:top;padding:.1em 0 .06em;margin:-.1em .2em -.06em 0',wrap);
-  const n=norm(w);return h('span','display:inline-block',m,w,hl.has(n)?'hlb':hc.has(n)?'hlc':'');});
- return t=>{if(k)fadeUp(k,t,.05);ws.forEach((w,i)=>{
+ const ws=toks.map((w,i)=>{const m=h('span',blk?'display:block;overflow:hidden;padding:.1em 0 .06em;margin:-.1em 0 -.06em':'display:inline-block;overflow:'+(v==='rise'?'hidden':'visible')+';vertical-align:top;padding:.1em 0 .06em;margin:-.1em .2em -.06em 0',wrap);
+  const n=norm(w);return h('span',v==='track'?`display:inline-flex;justify-content:${al==='left'?'flex-start':al==='right'?'flex-end':'center'};white-space:nowrap`:'display:inline-block',m,w,hl.has(n)?'hlb':hc.has(n)?'hlc':blk&&i%2?'hlc':'');});
+ return t=>{if(k)fadeUp(k,t,.05);let sx=0,sy=0;ws.forEach((w,i)=>{
   if(v==='pop'){const x=M.pop(P(t,tt[i]-.06,.35));w.style.opacity=P(t,tt[i]-.06,.08);w.style.transform=`scale(${L(.4,1,x)})`;}
   else if(v==='light'){w.style.opacity=L(.16,1,P(t,tt[i]-.05,.15));}
-  else{const x=E.expo(P(t,tt[i]-.08,.4));w.style.transform=`translateY(${(1-x)*110}%)`;}});};};
+  else if(v==='slam'){const a=tt[i]-.16,q=P(t,a,.16),bl=q>0&&q<1?12*(1-q*.4):0;   // cae desde 2,5x con desenfoque y sacude al tocar
+   w.style.opacity=P(t,a,.04);w.style.transform=`scale(${q<1?L(2.5,1,q*q):1-.04*Math.exp(-(t-a-.16)*16)*Math.cos((t-a-.16)*48)})`;w.style.filter=bl?`blur(${bl.toFixed(1)}px)`:'';
+   const [dx,dy]=shake(t,a+.16,10,.26);sx+=dx;sy+=dy;}
+  else if(v==='track'){const a=tt[i]-.12,x=E.o3(P(t,a,.75*M.d));if(!w._w&&w.offsetWidth){w._w=w.offsetWidth;w.style.width=w._w+'px';}   // ancho fijo: el texto no se reacomoda
+   w.style.opacity=E.o3(P(t,a,.3));w.style.letterSpacing=`calc(var(--dt) + ${((1-x)*.6).toFixed(3)}em)`;}
+  else{const f=q=>E.expo(P(q,tt[i]-.08,.4)),x=f(t);w.style.transform=DEPTH&&x<1?`perspective(900px) translateY(${(1-x)*110}%) rotateX(${(1-x)*-50}deg)`:`translateY(${(1-x)*110}%)`;
+   if(BLUR)mb(w,0,(x-f(t-DT()))*1.1*hOf(w));}});
+  if(v==='slam')wrap.style.translate=`${sx}px ${sy}px`;};};
 SC.bigword=(p,c)=>{const b=c.box,v=VAR(p,c,'letters');AL(b,p,c);const k=p.kick?kick(b,p.kick):null;const words=p.lines||[p.word],fs=p.size||260;
+ if(v==='slam'){const rows=words.map((s,i)=>{const m=h('div',`font-size:${fs}px;color:var(--hl);padding:.04em 0 0`,b,null,'disp nw');if(k&&!i)m.style.marginTop='20px';
+   return h('div','display:inline-block;transform-origin:50% 60%',m,s);});
+  const sub=p.sub?ml(b,p.sub,`font-size:${p.subSize||84}px;margin-top:40px`,'acc'):null;const a=p.at??.2;
+  return t=>{if(k)fadeUp(k,t,.15);let sx=0,sy=0;rows.forEach((r,i)=>{const s=a+i*.2,q=P(t,s,.2),u=t-s-.2;   // cada línea cae desde 2,6x (aceleración), impacta y vibra
+    r.style.opacity=P(t,s,.04);r.style.transform=`scale(${q<1?L(2.6,1,q*q):1-.05*Math.exp(-u*14)*Math.cos(u*46)})`;
+    const bl=q>0&&q<1?16*(1-q*.4):0;r.style.filter=bl?`blur(${bl.toFixed(1)}px)`:'';const [dx,dy]=shake(t,s+.2,18,.34);sx+=dx;sy+=dy;});
+   b.style.translate=`${sx}px ${sy}px`;if(sub)rise(sub,t,p.subAt??.9);};}
  if(v==='outline'||v==='echo'){
   const rows=[];words.forEach((s,i)=>{const echo=v==='echo'&&i===words.length-1;
    for(const lay of echo?['o','o','s']:['f']){const m=h('div',`font-size:${fs}px;overflow:hidden;padding:.14em 0 .04em;margin:${rows.length?-.14:0}em 0 -.04em;position:relative`,b,null,'disp nw');
@@ -520,13 +600,17 @@ function decor(sc){const st=BR.style||{},n=sc.inner,p=sc.p;
 // ───────── armado de la línea de tiempo ─────────
 async function init(cfg){CFG=cfg;BR=cfg.brand;W=cfg.W;H=cfg.H;TOTAL=cfg.total;U=Math.min(W,H)/1080;
  LOOK=cfg.look||{};M=MOTION[LOOK.motion]||MOTION.classic;
+ BLUR=cl(+LOOK.blur||0);DEPTH=+LOOK.depth?1:0;PUNCH=cl(+LOOK.punch||0);
  for(const k of['hl','kick','panel'])if(LOOK[k])S.dataset[k]=LOOK[k];if(LOOK.kickFont&&LOOK.kickFont!=='mono')S.dataset.kf=LOOK.kickFont;
  document.body.style.width=S.style.width=W+'px';document.body.style.height=S.style.height=H+'px';
  applyBrand();await document.fonts.ready;await Promise.all([...document.fonts].map(f=>f.load().catch(()=>{})));
  for(const [i,d] of cfg.scenes.entries()){const capOn=cfg.capsOn&&d.cap!==false;const area=layout(capOn);
   const root=h('div','z-index:'+(i+1),S,null,'scene');const th=theme(d.bg);applyTheme(root,th);
-  CUR=i;const veil=VEILED.has(d.tr)?h('div','',root,null,'veil'):null;const inner=h('div','',root,null,'inner');
-  const sc={i,type:d.type,p:d.p,s:d.s,e:d.e,D:d.e-d.s,tr:d.tr,root,veil,inner,th,area,cap:capOn};
+  CUR=i;const veil=VEILED.has(d.tr)?h('div','',root,null,'veil'):null;
+  const lay=d.tr==='layers'?[HL2,HL].map(col=>h('div','position:absolute;inset:0;background:'+col,root)):null;   // paneles de la marca que barren antes de la escena
+  const inner=h('div','',root,null,'inner');
+  const sc={i,type:d.type,p:d.p,s:d.s,e:d.e,D:d.e-d.s,tr:d.tr,root,veil,lay,inner,th,area,cap:capOn};
+  if(d.tr==='morph')sc.mo=morphSrc(SCN[i-1],veil);
   sc.dec=decor(sc);sc.cam=h('div','position:absolute;inset:0;transform-origin:50% 45%',inner);
   sc.fitbox=h('div',`position:absolute;left:${area.x}px;top:${area.y}px;transform-origin:0 0`,sc.cam);
   sc.box=h('div','display:flex;flex-direction:column;align-items:stretch',sc.fitbox);
@@ -539,20 +623,41 @@ async function init(cfg){CFG=cfg;BR=cfg.brand;W=cfg.W;H=cfg.H;TOTAL=cfg.total;U=
  if(BR.logoURL&&cfg.logoCorner!==false){logoEl=h('img','',S);logoEl.id='logo';logoEl.src=BR.logoURL;const lh=Math.round((BR.logoHeight||64)*U);
   logoEl.style.cssText+=`height:${lh}px;max-width:${W*.3}px;top:${Math.round(H*.045)}px;${(BR.logoPos||'left')==='right'?'right':'left'}:${Math.round(W*.08)}px`;await logoEl.decode().catch(()=>{});}
  if((BR.style||{}).progress){progEl=h('div','',S);progEl.id='prog';progEl.style.height=Math.max(4,Math.round(8*U))+'px';}
- CAPS=cfg.caps||[];return SCN.map(s=>({i:s.i,type:s.type,scale:+s.scale.toFixed(2)}));}
+ CAPS=cfg.caps||[];if(PUNCH)SCN.forEach(sc=>{sc.kt=keyT(sc);});
+ return SCN.map(s=>({i:s.i,type:s.type,scale:+s.scale.toFixed(2)}));}
+// morph: forma de origen = último [data-morph] o resaltado (.hlb/.hlc) de la escena anterior en su estado final; si no hay, el centro
+function morphSrc(pv,veil){let r=null;if(pv){pv.root.style.display='block';camSet(pv,pv.D);const q=pv.inner.querySelectorAll('[data-morph]');
+  const el=q.length?q[q.length-1]:[...pv.inner.querySelectorAll('.hlb,.hlc')].pop();if(el){const b=el.getBoundingClientRect();if(b.width>4&&b.height>4)r={x:b.left,y:b.top,w:b.width,h:b.height};}
+  pv.root.style.display='none';if(veil)veil.style.background=pv.th.hl;}
+ return r||{x:W/2-70,y:H*.45-70,w:140,h:140};}
+// look.punch: momento clave de la escena (p.at, countEnd del stat, botón del cta o la primera palabra clave) para el pulso de cámara
+function keyT(sc){const p=sc.p,num=v=>typeof v==='number'?v:Array.isArray(v)&&typeof v[0]==='number'?v[0]:null;
+ let k=sc.type==='stat'?num(p.countEnd)??num(p.at):sc.type==='concept'?num(p.at)??Math.min(sc.D*.5,1.8):sc.type==='cta'?num(p.btnAt)??1.4:num(p.at);
+ if(k==null&&p.hl){const hs=new Set([].concat(p.hl).map(norm)),w=(CFG.scenes[sc.i].words||[]).find(x=>hs.has(norm(x.w)));if(w)k=w.s;}
+ if(k==null){const w=CAPS.flatMap(g=>g.words).find(x=>x.k&&x.s>=sc.s&&x.s<sc.e);if(w)k=w.s-sc.s;}
+ return k!=null&&k>.12&&k<sc.D-.1?k:null;}
+function punchK(sc,t){if(sc.kt==null)return 1;const q=t-sc.kt;if(q<0||q>.62)return 1;return 1+.075*PUNCH*(q<.07?E.o3(q/.07):1-E.io(P(q,.07,.55)));}
+// cámara 3D: look.cam tilt|orbit y/o look.depth (la escena se asienta desde una leve inclinación al entrar)
+function cam3d(sc,t,cq,cm){let rx=0,ry=0;if(cm==='tilt'){rx=L(7,-2,cq);ry=L(-4,3,cq);}else if(cm==='orbit'){ry=L(-11,11,cq);rx=3+2*Math.sin(cq*Math.PI);}
+ if(DEPTH){const s=1-E.expo(P(t,0,.9));rx+=s*9;ry+=s*(sc.i%2?-6:6);}
+ return `perspective(2400px) rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`;}
+function camSet(sc,t){const cq=E.io(P(t,0,Math.max(sc.D,1))),cm=LOOK.cam||'zoom';
+ let cs=cm==='none'?1:cm==='pull'?L(1.05,1,cq):cm==='drift'?1.015:cm==='tilt'||cm==='orbit'?1.03:1+.035*cq;if(PUNCH)cs*=punchK(sc,t);
+ sc.cam.style.scale=String(cs);if(cm==='drift'&&!sc.cam.style.translate)sc.cam.style.translate=`0 ${L(0,-36,cq)}px`;
+ if(DEPTH||cm==='tilt'||cm==='orbit')sc.cam.style.transform=cam3d(sc,t,cq,cm);}
 let curCap=-1;
 // opt: sin nada = cuadro completo (MP4) · {layer:'scenes'} = solo escenas (opaco) · {layer:'caps'} = solo subtítulos · {layer:'overlay'} = logo/progreso
 // caps y overlay salen con fondo transparente (capas con alfa para Premiere).
-function frame(T,opt){FRAME=Math.round(T*(CFG.fps||30));opt=opt||{};const lay=opt.layer,alpha=lay==='caps'||lay==='overlay';
+function frame(T,opt){FRAME=Math.round(T*(CFG.fps||30));MBN=0;opt=opt||{};const lay=opt.layer,alpha=lay==='caps'||lay==='overlay';
  S.style.background=document.body.style.background=document.documentElement.style.background=alpha?'transparent':'';
  let top=null;SCN.forEach(sc=>{if(T>=sc.s)top=sc;});
  SCN.forEach((sc,i)=>{const nx=SCN[i+1];let vis=T>=sc.s&&(!nx||T<nx.s+(TRD[nx.tr]||0)+.02)&&(nx||T<=sc.e+5);
   if(alpha)vis=false;
   sc.root.style.display=vis?'block':'none';if(!vis)return;const t=T-sc.s;
   sc.inner.style.transform='';sc.inner.style.clipPath='';sc.inner.style.maskImage='';if(sc.veil)sc.veil.style.clipPath='';sc.cam.style.translate='';sc.inner.style.opacity='';
+  sc.inner.style.filter='';sc.inner.style.transformOrigin='';if(sc.veil)sc.veil.style.maskImage='';if(sc.cam._mb){sc.cam.style.filter='';sc.cam._mb=0;}
   trIn(sc,t);if(nx&&T>=nx.s)trOut(sc,nx,T-nx.s);
-  const cq=E.io(P(t,0,Math.max(sc.D,1))),cm=LOOK.cam||'zoom';
-  sc.cam.style.scale=String(cm==='none'?1:cm==='pull'?L(1.05,1,cq):cm==='drift'?1.015:1+.035*cq);if(cm==='drift'&&!sc.cam.style.translate)sc.cam.style.translate=`0 ${L(0,-36,cq)}px`;sc.dec(T,t);sc.upd(t);});
+  camSet(sc,t);sc.dec(T,t);sc.upd(t);});
  // subtítulos: ocultos si la escena de arriba los tiene desactivados
  const capsOn=!lay||opt.layer==='caps';
  const show=capsOn&&top&&top.cap&&(T-top.s)>(TRD[top.tr]||0)*.6;const k=show?CAPS.findIndex(g=>T>=g.s&&T<g.e):-1;
