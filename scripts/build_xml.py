@@ -18,7 +18,7 @@ def url(p):   # macOS: file://localhost/Users/... · Windows: file://localhost/C
     if re.match(r'^[A-Za-z]:/',p): p='/'+p
     return 'file://localhost'+urllib.parse.quote(p,safe='/')
 def fr(x): return int(round(x*FPS))
-def dur(p): return float(subprocess.run(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0',p],capture_output=True,text=True).stdout)
+def dur(p): return float(subprocess.run(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0',p],capture_output=True,text=True,errors='replace').stdout)
 uid=[0]
 def nid(p): uid[0]+=1; return f'{p}-{uid[0]}'
 done=set()
@@ -58,7 +58,7 @@ a2=[];M=cfg.get('music') or {}
 if M.get('path'):
     os.makedirs(os.path.join(A,'Musica'),exist_ok=True);mp=os.path.join(A,'Musica',os.path.basename(M['path']))
     if os.path.abspath(mp)!=os.path.abspath(M['path']): shutil.copyfile(M['path'],mp)
-    r=subprocess.run(['ffmpeg','-nostats','-i',mp,'-af','ebur128','-f','null','-'],capture_output=True,text=True).stderr
+    r=subprocess.run(['ffmpeg','-nostats','-i',mp,'-af','ebur128','-f','null','-'],capture_output=True,text=True,errors='replace').stderr
     I=float(re.findall(r'I:\s+(-?[\d.]+) LUFS',r)[-1]);comp=-16-I
     md=fr(dur(mp));off=fr(M.get('offset',0));vs,ve,T=vo['beats'][0]['s'],vo['voice_end'],pm['total']
     from mix import music_points;pts=music_points(vo,M,T,end=-60)   # misma curva que el MP4

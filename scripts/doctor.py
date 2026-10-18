@@ -12,7 +12,7 @@ FIX={'ffmpeg':'winget install Gyan.FFmpeg' if WIN else 'brew install ffmpeg','no
      'chrome':'winget install Google.Chrome' if WIN else 'brew install --cask google-chrome','deps':INST}
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 def ver(cmd):
-    try: return subprocess.run(cmd,capture_output=True,text=True,timeout=30).stdout.strip().splitlines()[0]
+    try: return subprocess.run(cmd,capture_output=True,text=True,errors='replace',timeout=30).stdout.strip().splitlines()[0]
     except Exception: return None
 def chrome():
     L=os.environ.get('LOCALAPPDATA','');PF=os.environ.get('ProgramFiles',r'C:\Program Files');PF86=os.environ.get('ProgramFiles(x86)',r'C:\Program Files (x86)')

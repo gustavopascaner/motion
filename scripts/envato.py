@@ -33,7 +33,7 @@ def get(url,dst=None):
     if dst: open(dst,'wb').write(r)
     return r
 def probe(p):
-    o=json.loads(subprocess.run(['ffprobe','-v','error','-show_entries','stream=codec_type,width,height,r_frame_rate,nb_frames:stream_side_data=rotation:format=duration','-of','json',p],capture_output=True,text=True).stdout)
+    o=json.loads(subprocess.run(['ffprobe','-v','error','-show_entries','stream=codec_type,width,height,r_frame_rate,nb_frames:stream_side_data=rotation:format=duration','-of','json',p],capture_output=True,text=True,errors='replace').stdout)
     v=next((s for s in o.get('streams',[]) if s['codec_type']=='video'),None);d=float(o['format']['duration'])
     if not v: return dict(dur=d)
     n,dd=map(int,v['r_frame_rate'].split('/'));rate=round(n/dd,3);w,h=v['width'],v['height']

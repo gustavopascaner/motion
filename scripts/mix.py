@@ -39,7 +39,7 @@ def loudnorm2(args,fc,target='I=-14:TP=-1.5:LRA=11'):
     """Dos pasadas: mide la mezcla y devuelve el filtro loudnorm lineal con esas medidas (cae a una pasada si no puede medir)."""
     import re
     a=[x if x!='error' else 'info' for x in args]   # loudnorm imprime las medidas en nivel info
-    r=subprocess.run(a+['-hide_banner','-nostats','-filter_complex',fc+f',loudnorm={target}:print_format=json[x]','-map','[x]','-f','null','-'],capture_output=True,text=True)
+    r=subprocess.run(a+['-hide_banner','-nostats','-filter_complex',fc+f',loudnorm={target}:print_format=json[x]','-map','[x]','-f','null','-'],capture_output=True,text=True,errors='replace')
     m=re.search(r'\{[^{}]*"input_i"[^{}]*\}',r.stderr)
     if not m: print('⚠️  no pude medir la sonoridad: normalizo en una pasada');return f'loudnorm={target}'
     d=json.loads(m.group(0))
@@ -72,7 +72,7 @@ def main(W):
     srt(caps,os.path.join(out_dir,name+'.srt'))
     shutil.copyfile(os.path.join(W,'voice.wav'),os.path.join(out_dir,'Assets','voz.wav'))
     if m.get('path') and os.path.exists(m['path']): shutil.copyfile(m['path'],os.path.join(out_dir,'Assets','musica'+os.path.splitext(m['path'])[1]))
-    d=float(subprocess.run(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0',final],capture_output=True,text=True).stdout or 0)
+    d=float(subprocess.run(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0',final],capture_output=True,text=True,errors='replace').stdout or 0)
     print(f'✓ {final} ({d:.1f} s) · subtítulos: {name}.srt · {len(sfx)} SFX');timing.log(W,'Mezcla de audio',time.time()-t0)
 
 if __name__=='__main__':
