@@ -51,7 +51,7 @@ API en `reference/api.md`. `S(tipo, inicio, params)` por escena, en orden; `inic
 - **Ritmo**: una escena cada 3–5 s, cortes en el golpe, 1–2 respiros entre escenas secas. Nada quieto > ~5 s: que se vaya armando con ítems sincronizados.
 - **Variedad**: no repetir tipo seguido; máx. 2 `kinetic` seguidas; alternar texto y gráficas.
 - **Mostrar, no repetir**: en pantalla palabras clave, datos y estructura (salvo `kinetic`/`quote`). Datos → `stat`/`bars`/`donut`; enumeraciones → `list`/`steps`/`icons`; contrastes → `compare`; preguntas → `question`; mensajes → `phone`; remates → `bigword`; fotos del usuario → `image`.
-- **Cierre con `cta`** sincronizado con el guion. **Nunca un usuario de redes (@…) en ninguna escena**, salvo que el usuario lo pida y diga cuál (no inventarlo ni sacarlo de la marca). Textos cortos: títulos de 1–3 palabras por línea, ítems ≤ 6.
+- **Cierre con `cta`** sincronizado con el guion. **Nunca un usuario de redes (@…) en ninguna escena**, salvo que el usuario lo pida y diga cuál (no inventarlo ni sacarlo de la marca). Textos cortos: títulos de 1–3 palabras por línea, ítems ≤ 6. **Nunca partir una palabra con guion entre renglones** (`"INTELI-"` / `"GENCIA"`): si no entra, cambiar la palabra o repartir el texto de otra forma; `render.js` frena el render si lo detecta.
 
 ## 4b · Sonido
 Automático (whoosh suave, ding/pop/click); el video arranca sin SFX. **Prohibido el 'boom'**: golpes graves, hits, bass drops, impactos (tampoco generados con ElevenLabs). Máximo `config.sfx_max` (6) contando los manuales. Literales (1–2 por video, solo si algo suena de verdad): `sfx.md`.

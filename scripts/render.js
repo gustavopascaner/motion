@@ -133,6 +133,12 @@ function review(tl,vo,WD){const w=[],err=[],S=tl.scenes;
     if(i>1&&S[i-1].type==='kinetic'&&S[i-2].type==='kinetic'&&x.type==='kinetic')w.push(`3 "kinetic" seguidas en ${i}: meter una escena gráfica (stat, list, icons…)`);
     if(x.type==='kinetic'&&(x.p.text||x.words.map(y=>y.w).join(' ')).split(/\s+/).length>14)w.push(`escena ${i} (kinetic) tiene más de 14 palabras: usar "text" con la frase clave`);
     if(Object.keys(x.p).some(k=>/^(at|.*At|countEnd)$/.test(k)&&x.p[k]>D))w.push(`escena ${i}: un tiempo interno cae después del final de la escena`);});
+  // nunca una palabra partida con guion entre renglones ("PALA-" / "BRA"): queda muy mal; frena el render
+  S.forEach((x,i)=>{const txt=v=>String(v).replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').trim(),bad=[];
+    const walk=v=>{if(Array.isArray(v)){v.forEach((y,k)=>{if(typeof y==='string'&&k<v.length-1&&/\p{L}[-\u2010\u2011\u00AD]$/u.test(txt(y)))bad.push(txt(y));walk(y);});}
+      else if(v&&typeof v==='object')Object.values(v).forEach(walk);
+      else if(typeof v==='string'){if(/\p{L}[-\u2010\u2011]\s*\n/u.test(txt(v)))bad.push(txt(v).split('\n')[0]);if(/\u00AD|&shy;/.test(v))bad.push(txt(v));}};
+    walk(x.p);if(bad.length)err.push(`escena ${i} (${x.type}) parte una palabra con guion entre renglones ("${bad[0]}"): nunca cortar palabras; usar otra palabra, repartir el texto en otras líneas o dejar que la escena se achique`);});
   if(S[S.length-1].type!=='cta')w.push('la última escena no es un "cta"');
   const cc=S.filter(x=>x.type==='concept');
   // obligatoria salvo en videos cortos (< 30 s), donde puede no haber lugar: ahí es solo un aviso
