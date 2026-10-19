@@ -9,9 +9,9 @@ La vista previa de Envato tiene marca de agua audible: siempre intentar entregar
    - Si algo falla (sin sesión, error de descarga, enlace vencido), seguir con la vista previa y avisarlo en la entrega, sin bloquear el video.
 3. Abrir el link del ítem (`config.music.envato.url`) → redirige a `app.envato.com` → clic en **Descargar**. Con licencia automática aparece "Licenciado automáticamente"; si en otra cuenta aparece un diálogo de proyecto, licenciar con el nombre del video.
 4. **Bajar el archivo**:
-   - Si la descarga llega a `~/Downloads`: `$PY $SK/scripts/envato.py collect "<work>"` (busca ahí).
+   - Si la descarga llega a `~/Downloads`: `$PY $SK/scripts/envato.py collect "<work>"` (busca ahí, copia el original a `Assets/Envato` y **borra de Descargas** el archivo o zip bajado para no duplicar).
    - Si el navegador de la app no guarda archivos: leer las solicitudes de red (`read_network_requests` con patrón `download`), abrir la respuesta de `download.data` y tomar el `downloadUrl` firmado (vence en minutos). Bajarlo con `curl -sSL --fail -o <scratchpad>/envato_dl/<slug>.zip "<downloadUrl>"` (carpeta nueva y vacía) y `$PY $SK/scripts/envato.py collect "<work>" --file music <zip>` (elige el WAV del zip).
-5. Volver a correr **solo** `mix.py` y `build_xml.py` (no hace falta re-renderizar). Verificar con `envato.py report` que diga ✅ licenciado.
+5. Volver a correr **solo** `mix.py` (no hace falta re-renderizar). Verificar con `envato.py report` que diga ✅ licenciado.
 6. Avisar si la página dice **"No está listo para ver Claim Clear"**: en YouTube puede aparecer un reclamo de Content ID que se resuelve con la licencia (en Instagram/TikTok no afecta).
 
 Si no hay navegador o el usuario no quiere: darle el link para que lo baje él y después `envato.py collect "<work>"`.

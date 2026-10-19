@@ -1,4 +1,4 @@
-# Cierre del video en una sola corrida (Windows): render final + mix + Premiere + QC + look log + timing.
+# Cierre del video en una sola corrida (Windows): render final + mix + QC + look log + timing.
 # uso: powershell -ExecutionPolicy Bypass -File finish.ps1 <work>     (logs completos en <work>\finish.log)
 param([Parameter(Mandatory=$true)][string]$Work)
 $ErrorActionPreference = "Stop"
@@ -9,10 +9,6 @@ function Run($label, [scriptblock]$cmd) { "== $label" | Add-Content $LOG; & $cmd
 $cfg = Get-Content (Join-Path $W "config.json") -Raw | ConvertFrom-Json
 Run "render" { node "$SK\scripts\render.js" $W }
 Run "mix" { & $PY -I "$SK\scripts\mix.py" $W }
-if ($cfg.premiere -ne $false) {
-  Run "premiere" { node "$SK\scripts\render.js" $W --premiere }
-  Run "xml" { & $PY -I "$SK\scripts\build_xml.py" $W }
-}
 Run "look" { node "$SK\scripts\look.js" log $W }
 Run "timing" { & $PY -I "$SK\scripts\timing.py" report $W }
 Write-Host "MP4: $($cfg.out_dir)\$($cfg.name).mp4"

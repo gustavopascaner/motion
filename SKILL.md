@@ -1,14 +1,14 @@
 ---
 name: motion
-description: Produce un video de motion graphics con voz en off a partir de un GUION (sin video de cámara): escenas animadas con la marca del usuario, locución IA argentina, subtítulos, música y SFX; entrega MP4 + SRT + proyecto de Premiere. Usar cuando el usuario escribe /motion con un guion (texto o archivo), o pide "hacé un video de motion graphics con este guion", "convertí este guion en video", "video animado con voz en off".
+description: Produce un video de motion graphics con voz en off a partir de un GUION (sin video de cámara): escenas animadas con la marca del usuario, locución IA argentina, subtítulos, música y SFX; entrega un MP4. Usar cuando el usuario escribe /motion con un guion (texto o archivo), o pide "hacé un video de motion graphics con este guion", "convertí este guion en video", "video animado con voz en off".
 ---
 
 # /motion — guion → video con voz en off
-Entrada: guion (texto o archivo). Salida: `<carpeta>/<NAME>_MOTION/` (MP4, SRT, XML de Premiere, `Assets/`, `LEEME.md`, `.work/`). Español rioplatense (voseo); avisar el avance entre pasos largos.
+Entrada: guion (texto o archivo). Salida: `<carpeta>/<NAME>_MOTION/` (MP4, `Assets/` solo si hay originales de Envato, `LEEME.md`, `.work/`). **No generar XML de Premiere ni SRT.** Español rioplatense (voseo); avisar el avance entre pasos largos.
 **Autonomía:** `/motion` autoriza todos los pasos (voz, SFX, música, render, mezcla); tras el paso 0 no pedir confirmaciones. Frenar solo en: voz > 2 min, falla de ElevenLabs, marca nueva.
 `SK` = carpeta de la skill (`~/.claude/skills/motion` o `~/.codex/skills/motion`). `PY` = `$SK/.venv/bin/python -I` (Windows `$SK\.venv\Scripts\python.exe -I`) para todos los `.py`. Si `doctor.py` marca ✗: `bash $SK/scripts/install.sh` (Windows: `install.ps1` con `powershell -ExecutionPolicy Bypass -File`).
 **No leer `engine.html` ni `render.js`: todo lo necesario está en `reference/api.md`.** Catálogo de escenas y tokens de look: `reference/escenas.md` · estilos: `estilos.md` · ejemplo: `reference/ejemplo/` · recetas: leer el índice (`node $SK/scripts/receta.js`) y como mucho 3 (`receta.js R03 R07`).
-Leer solo si aplica: `marca-nueva.md` · `voces.md` (otra voz, ElevenLabs, `say`/`pause`) · `envato.md` · `sfx.md` (SFX literales) · `premiere-y-versiones.md` (Premiere, LEEME, v2) · `preferencias.md`.
+Leer solo si aplica: `marca-nueva.md` · `voces.md` (otra voz, ElevenLabs, `say`/`pause`) · `envato.md` · `sfx.md` (SFX literales) · `versiones.md` (LEEME, v2) · `preferencias.md`.
 **Cada video tiene diseño propio** aunque sea la misma marca (la marca fija fuentes y colores): nunca reutilizar el look ni el concept de un video anterior.
 
 ## 0 · Marca y preguntas
@@ -21,7 +21,7 @@ Preguntar **solo lo que falte, en una sola tanda**; si no falta nada, arrancar. 
 { "name": "NAME", "out_dir": "/abs/<carpeta>/NAME_MOTION", "edit_dir": "/abs/<carpeta>/NAME_MOTION",
   "format": "9:16", "fps": 30, "brand": "<slug>", "tail": 1.6, "keywords": ["palabra","clave"], "sfx_max": 6, "music": {} }
 ```
-`keywords` = 3–6 palabras del guion resaltadas. Opcionales: `"captions": false`, `"premiere": false`.
+`keywords` = 3–6 palabras del guion resaltadas. Opcional: `"captions": false`.
 **Logo: nunca va en el video por defecto.** El logo de la marca es solo referencia para sacar colores, estilo y tipografías. Solo si el usuario pide expresamente el logo en el video: `"logo": true` (y `"logo_corner": false` para que no quede en la esquina).
 
 ## 2 · Guion → beats → voz
@@ -59,9 +59,9 @@ Automático (whoosh suave, ding/pop/click); el video arranca sin SFX. **Prohibid
 ## 5 · Chequeo, director y entrega
 1. `node $SK/scripts/render.js "<work>" --check` → plan (escenas, SFX, avisos de **Dirección**) + `sheet.jpg` (5 cuadros por escena; los primeros muestran cómo ENTRA). Corregir todos los ✗ (frenan el render) y ⚠️, textos achicados ("se achicó al N %"), superposiciones con subtítulos, poco contraste y escenas vacías a la mitad. **Mirada 2.**
 2. **Revisión de director (una sola ronda, máx. 2 escenas rehechas):** puntuar cada escena 1–5 en *potencia* (movimiento con intención), *idea* (cuenta algo o decora) y *continuidad* (objeto héroe / estilo); rehacer las **2 peores** (más movimiento, otra receta, otra transición) sin iterar más; puntajes en `<work>/direccion.md` (una línea por escena). Correr de nuevo `--check` y mirar la hoja: **Mirada 3** (solo 3 miradas por video).
-3. **Cierre** (en segundo plano): `bash $SK/scripts/finish.sh "<work>"` (Windows: `finish.ps1`). Hace render + `mix.py` + Premiere (salvo `config.premiere:false`) + `qc.py` (duración vs. voz, audio, cuadros negros/congelados) + `look.js log` + `timing.py report`; detalle en `<work>/finish.log`. Si el QC avisa algo, corregir y repetir el paso afectado. No mirar cuadros del MP4.
-4. `LEEME.md` en `out_dir` (contenido en `premiere-y-versiones.md` → *LEEME.md*).
-5. Responder corto: ruta del MP4 y del XML, duración, voz y música (una línea de por qué y "música licenciada: <tema> de <autor>" más el aviso de Claim Clear si corresponde; o que quedó la preview y por qué), escenas destacadas, tiempo total.
+3. **Cierre** (en segundo plano): `bash $SK/scripts/finish.sh "<work>"` (Windows: `finish.ps1`). Hace render + `mix.py` + `qc.py` (duración vs. voz, audio, cuadros negros/congelados) + `look.js log` + `timing.py report`; detalle en `<work>/finish.log`. Si el QC avisa algo, corregir y repetir el paso afectado. No mirar cuadros del MP4.
+4. `LEEME.md` en `out_dir` (contenido en `versiones.md` → *LEEME.md*).
+5. Responder corto: ruta del MP4, duración, voz y música (una línea de por qué y "música licenciada: <tema> de <autor>" más el aviso de Claim Clear si corresponde; o que quedó la preview y por qué), escenas destacadas, tiempo total.
 
 ## Versiones (v2, ajustes)
-Reusar `.work` y repetir desde el paso que cambia (música → `mix.py` + `build_xml.py`; visual → render + mix + `--premiere --only=N`; texto → tts + todo): `premiere-y-versiones.md`.
+Reusar `.work` y repetir desde el paso que cambia (música → `mix.py`; visual → render + mix; texto → tts + todo): `versiones.md`.

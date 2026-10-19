@@ -3,7 +3,6 @@
 //      node render.js <work> --test [--at=end]     → un cuadro por escena → <work>/test/*.jpg + hoja <work>/sheet.jpg (ancho máx. 1400 px)
 //      node render.js <work> --check [--at=…]      → plan + hoja de prueba en una sola corrida (default --at=0.06,0.18,0.35,mid,end); salida compacta
 //      node render.js <work> [--par=6]             → <work>/video.mp4 (después: mix.py)
-//      node render.js <work> --premiere [--only=3,5|caps|overlay] → capas .mov en <out_dir>/Assets (después: build_xml.py)
 //      node render.js <work> --look-preview        → muestra del look del video (6 placas) → <work>/look.jpg
 //      (todos los modos imprimen solo inicio/fin y errores; --verbose = progreso por cuadro y detalle)
 //      node render.js --brand-preview=<marca> --out=<png> [--format=9:16]   → muestra de la marca (4 escenas)
@@ -218,33 +217,6 @@ async function full(WD){const t0=Date.now();const {tl}=build(WD);gate(tl,WD);con
   if(r.status)throw new Error('falló la unión de partes');fs.rmSync(dir,{recursive:true,force:true});
   const secs=(Date.now()-t0)/1000;console.log(`${VERBOSE?'\n':''}✓ ${out} (${nf} cuadros en ${secs.toFixed(0)} s)`);logTime(WD,'Render de video',secs);}
 
-// ───── capas para Premiere: una .mov por escena (opaca, con su transición de entrada ya compuesta), subtítulos con alfa por escena y overlay ─────
-const TRD={wipe:.5,slide:.55,circle:.6,zoom:.55,push:.55,cut:0,wipex:.5,split:.55,diag:.55,shape:.65,blinds:.6,layers:.7,iris:.5,zoomblur:.4,slice:.45,morph:.65};   // igual que engine.html
-async function premiere(WD){const t0=Date.now();const {cfg,tl}=build(WD);gate(tl,WD);const F=tl.fps,A=path.join(cfg.out_dir,'Assets');
-  const only=arg('only')?new Set(arg('only').split(',').map(x=>isNaN(x)?x:+x)):null;const S=tl.scenes,jobs=[];
-  const pad=n=>String(n).padStart(2,'0'),fr=t=>Math.round(t*F);
-  S.forEach((x,i)=>{const nx=S[i+1],b=nx?nx.s:tl.total,f0=fr(x.s);
-    jobs.push({kind:'scene',i,track:'scene',file:path.join(A,'Escenas',`${pad(i)}_${x.type}.mov`),f0,n:fr(b)-f0,opt:{layer:'scenes'},name:`${pad(i)} · ${x.type}`});
-    if(tl.capsOn&&x.cap&&tl.caps.some(g=>g.s<x.e&&g.e>x.s)){const c0=fr(x.s+(TRD[x.tr]||0)*.6);
-      jobs.push({kind:'caps',i,track:'caps',file:path.join(A,'Subtitulos',`${pad(i)}_subs.mov`),f0:c0,n:fr(x.e)-c0,opt:{layer:'caps'},name:`${pad(i)} · subtítulos`});}});
-  if(tl.brand.logoURL&&cfg.logo_corner!==false||(tl.brand.style||{}).progress)jobs.push({kind:'overlay',track:'overlay',file:path.join(A,'Overlay','overlay.mov'),f0:0,n:fr(tl.total),opt:{layer:'overlay'},name:'logo'});
-  const ok=j=>!only||(j.i!=null&&only.has(j.i))||only.has(j.kind);
-  const todo=jobs.filter(j=>j.n>0&&ok(j));
-  ['Escenas','Subtitulos','Overlay'].forEach(d=>fs.mkdirSync(path.join(A,d),{recursive:true}));
-  const par=+(arg('par')||Math.min(6,Math.max(2,os.cpus().length-2)));let q=0,done=0;const nf=todo.reduce((a,j)=>a+j.n,0);
-  console.log(`premiere: ${todo.length} clips (${nf} cuadros)…`);const tick=setInterval(()=>VERBOSE&&process.stdout.write(`\r  ${done}/${nf} cuadros`),2000);
-  await withPages(tl,Math.min(par,todo.length||1),async pg=>{while(q<todo.length){const j=todo[q++];
-    const al=j.kind!=='scene',enc=al?['-c:v','prores_ks','-profile:v','4','-pix_fmt','yuva444p10le']:['-c:v','prores_ks','-profile:v','3','-pix_fmt','yuv422p10le'];
-    const ff=spawn('ffmpeg',['-v','error','-y','-f','image2pipe','-framerate',String(F),'-c:v',al?'png':'mjpeg','-i','-',...enc,'-vendor','apl0','-r',String(F),j.file]);
-    const end=new Promise(r=>ff.on('close',r));
-    for(let k=0;k<j.n;k++){await pg.evaluate((t,o)=>frame(t,o),(j.f0+k)/F,j.opt);const buf=await pg.screenshot(al?{type:'png',omitBackground:true,optimizeForSpeed:true}:{type:'jpeg',quality:95,optimizeForSpeed:true});
-      if(!ff.stdin.write(buf))await new Promise(r=>ff.stdin.once('drain',r));done++;}
-    ff.stdin.end();await end;}});
-  clearInterval(tick);
-  fs.writeFileSync(path.join(WD,'premiere.json'),JSON.stringify({W:tl.W,H:tl.H,fps:F,total:tl.total,frames:fr(tl.total),
-    clips:jobs.filter(j=>j.n>0).map(({opt,...j})=>({...j,label:j.kind==='scene'?`${j.name} · ${String((S[j.i].p.lines||[S[j.i].p.kick||S[j.i].p.text||S[j.i].p.word||''])[0]).replace(/<[^>]+>/g,'').slice(0,40)}`:j.name}))},null,1));
-  const secs=(Date.now()-t0)/1000;console.log(`${VERBOSE?'\n':''}✓ ${todo.length} clips en ${A} (${secs.toFixed(0)} s) → ahora: build_xml.py`);logTime(WD,'Render de capas para Premiere',secs);}
-
 async function lookPreview(WD){const cfg=JSON.parse(fs.readFileSync(path.join(WD,'config.json'),'utf8'));const [W,H]=FORMATS[cfg.format||'9:16'];
   const brand=loadBrand(cfg.brand||'editorial',cfg.logo===true),look=loadLook(WD,brand),custom=fs.existsSync(path.join(WD,'scenes.js'))?path.join(WD,'scenes.js'):null;
   const ROT=(PAL[look.palette]||PAL.classic).filter(k=>brand.colors[k]);
@@ -277,4 +249,4 @@ async function brandPreview(slug,out,fmt){const [W,H]=FORMATS[fmt||'9:16'];const
 (async()=>{const bp=arg('brand-preview');if(bp)return brandPreview(bp,arg('out')||path.join(process.cwd(),`marca_${path.basename(bp)}.jpg`),arg('format'));
   const WD=path.resolve(process.argv[2]);
   if(process.argv.includes('--look-preview'))return lookPreview(WD);
-  if(process.argv.includes('--check'))await check(WD);else if(process.argv.includes('--plan'))plan(WD);else if(process.argv.includes('--premiere'))await premiere(WD);else if(process.argv.includes('--test'))await test(WD);else await full(WD);})().catch(e=>{console.error('✗',e.message);process.exit(1);});
+  if(process.argv.includes('--check'))await check(WD);else if(process.argv.includes('--plan'))plan(WD);else if(process.argv.includes('--test'))await test(WD);else await full(WD);})().catch(e=>{console.error('✗',e.message);process.exit(1);});

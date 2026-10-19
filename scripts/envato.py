@@ -10,6 +10,7 @@ uso:
         → <work>/envato/<kind>_<slug>.json + hoja de candidatos <work>/envato/<kind>_<slug>.jpg (videos) / perfil de energía (música)
   envato.py use <work> <clave> <búsqueda>#<n>     (ej. kl video_doctor-talking#3) → registra en config.json (broll[clave] o music)
   envato.py collect <work> [--from ~/Downloads] [--file <clave> <archivo>]  → reemplaza vistas previas por originales licenciados
+        (copia a Assets/Envato y borra de Descargas lo bajado, para no duplicar)
   envato.py report <work>                          → tabla de procedencia (para el LEEME)
 """
 import os as _o,sys as _s,subprocess as _sp
@@ -135,6 +136,7 @@ def collect(W,src,manual=None):
             cands=[p for p in cands if os.path.getmtime(p)>=e.get('chosen',0)-86400*30]
             if not cands: print(f'… {k}: todavía no está en {src} ({e["title"]})');continue
             found=max(cands,key=os.path.getmtime)
+        dl=found   # lo descargado (archivo o zip): se borra de Descargas cuando el original ya quedó copiado en Assets
         if found.lower().endswith('.zip'):
             shutil.rmtree(tmp,ignore_errors=True);zipfile.ZipFile(found).extractall(tmp)
             media=[os.path.join(r,f) for r,_,fs in os.walk(tmp) for f in fs if '__MACOSX' not in r and f.lower().endswith(VID if e['kind']=='video' else AUD)]
@@ -146,9 +148,11 @@ def collect(W,src,manual=None):
         if e['kind']=='video': b.update(path=out,frames=p['frames'],rate=p['rate'],w=p['w'],h=p['h'])
         else: b.update(path=out,dur=round(p['dur'],2))
         e.update(status='licensed',file=out);print(f'✓ {k}: original licenciado → {out}')
+        if os.path.dirname(os.path.abspath(dl))==os.path.abspath(src) and os.path.getsize(out)==os.path.getsize(found):
+            os.remove(dl);print(f'  borrado de {src}: {os.path.basename(dl)} (ya está en Assets)')
     shutil.rmtree(tmp,ignore_errors=True);cfgio(W,c)
     pend=[k for k,b in entries(c) if b['envato']['status']!='licensed']
-    print('pendientes:',', '.join(pend) if pend else 'ninguno — volver a correr build_xml.py')
+    print('pendientes:',', '.join(pend) if pend else 'ninguno — volver a correr mix.py')
 def report(W):
     c=cfgio(W);rows=list(entries(c))
     if not rows: print('Sin material de Envato.');return
