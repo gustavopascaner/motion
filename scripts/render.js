@@ -17,12 +17,13 @@ const arg=k=>{const a=process.argv.find(x=>x.startsWith('--'+k+'='));return a?a.
 const FORMATS={'9:16':[1080,1920],'1:1':[1080,1080],'4:5':[1080,1350],'16:9':[1920,1080]};
 const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9%]/g,'');
 
-function loadBrand(slug){const dir=require('./design.js').brandDir(slug);const f=path.join(dir,'brand.json');
+function loadBrand(slug,useLogo){const dir=require('./design.js').brandDir(slug);const f=path.join(dir,'brand.json');
   if(!fs.existsSync(f))throw new Error(`No existe la marca "${slug}" (${f}). Ver: $PY scripts/brand.py list`);
   const b=JSON.parse(fs.readFileSync(f,'utf8'));
   for(const k in b.fonts||{})for(const x of b.fonts[k].files||[]){const p=path.isAbsolute(x.file)?x.file:path.join(dir,x.file);
     if(!fs.existsSync(p))throw new Error(`Falta la tipografía ${p}: correr brand.py setup ${slug}`);x.url=fileURL(p);}
-  if(b.logo){const p=path.isAbsolute(b.logo)?b.logo:path.join(dir,b.logo);if(fs.existsSync(p))b.logoURL=fileURL(p);else console.warn('⚠️  no encuentro el logo',p);}
+  // El logo de la marca es solo referencia (colores, estilo): entra al video únicamente con "logo": true en config.json.
+  if(b.logo&&useLogo){const p=path.isAbsolute(b.logo)?b.logo:path.join(dir,b.logo);if(fs.existsSync(p))b.logoURL=fileURL(p);else console.warn('⚠️  no encuentro el logo',p);}
   return b;}
 
 // ───── look (dirección de arte del video) y diseño a medida: ver scripts/design.js ─────
@@ -37,7 +38,7 @@ function sfxDir(){const c=[path.join(SK,'assets','sfx'),...['.claude','.codex'].
 function build(WD){
   const cfg=JSON.parse(fs.readFileSync(path.join(WD,'config.json'),'utf8'));
   const [W,H]=FORMATS[cfg.format||'9:16']||cfg.size;const FPS=cfg.fps||30;
-  const brand=loadBrand(cfg.brand||'editorial');const vo=JSON.parse(fs.readFileSync(path.join(WD,'words.json'),'utf8'));
+  const brand=loadBrand(cfg.brand||'editorial',cfg.logo===true);const vo=JSON.parse(fs.readFileSync(path.join(WD,'words.json'),'utf8'));
   const words=vo.words,beats=vo.beats,
     // lo que se muestra: si el beat tenía "say", cada palabra trae "d" (texto escrito; "" = se une a la anterior) y "de" (fin del grupo)
     shown=words.filter(x=>x.d!=='').map(x=>({...x,w:x.d??x.w,e:x.de??x.e})),total=+(vo.voice_end+(cfg.tail??1.6)).toFixed(3);
@@ -245,7 +246,7 @@ async function premiere(WD){const t0=Date.now();const {cfg,tl}=build(WD);gate(tl
   const secs=(Date.now()-t0)/1000;console.log(`${VERBOSE?'\n':''}✓ ${todo.length} clips en ${A} (${secs.toFixed(0)} s) → ahora: build_xml.py`);logTime(WD,'Render de capas para Premiere',secs);}
 
 async function lookPreview(WD){const cfg=JSON.parse(fs.readFileSync(path.join(WD,'config.json'),'utf8'));const [W,H]=FORMATS[cfg.format||'9:16'];
-  const brand=loadBrand(cfg.brand||'editorial'),look=loadLook(WD,brand),custom=fs.existsSync(path.join(WD,'scenes.js'))?path.join(WD,'scenes.js'):null;
+  const brand=loadBrand(cfg.brand||'editorial',cfg.logo===true),look=loadLook(WD,brand),custom=fs.existsSync(path.join(WD,'scenes.js'))?path.join(WD,'scenes.js'):null;
   const ROT=(PAL[look.palette]||PAL.classic).filter(k=>brand.colors[k]);
   const sc=[{type:'title',p:{kick:'EL TEMA',lines:['UN TÍTULO','CON <span class="hlb">ESTILO</span>'],sub:'y un acento'}},
     {type:'stat',p:{kick:'DATO',value:73,suffix:'%',label:'DE LOS PACIENTES',sub:'Fuente: ejemplo'}},

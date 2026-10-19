@@ -3,7 +3,7 @@
 //      node look.js estilos     → lista las direcciones de arte curadas (scripts/estilos.js, reference/estilos.md)
 //      node look.js show <work>     → resume el look y cuánto se parece a los anteriores de la marca
 //      node look.js log <work>      → al entregar: guarda look + firmas de scenes.js en ~/.config/motion/looks/<marca>.json
-// La tipografía, los colores y el logo vienen siempre de la marca; brand.json → "design": {"lock": {...}} fija tokens que no deben variar.
+// La tipografía y los colores vienen siempre de la marca (el logo solo con "logo": true en config.json); brand.json → "design": {"lock": {...}} fija tokens que no deben variar.
 const fs=require('fs'),path=require('path');
 const D=require('./design.js'),ST=require('./estilos.js');
 const SK=path.join(__dirname,'..');

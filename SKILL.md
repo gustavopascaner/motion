@@ -9,7 +9,7 @@ Entrada: guion (texto o archivo). Salida: `<carpeta>/<NAME>_MOTION/` (MP4, SRT, 
 `SK` = carpeta de la skill (`~/.claude/skills/motion` o `~/.codex/skills/motion`). `PY` = `$SK/.venv/bin/python -I` (Windows `$SK\.venv\Scripts\python.exe -I`) para todos los `.py`. Si `doctor.py` marca ✗: `bash $SK/scripts/install.sh` (Windows: `install.ps1` con `powershell -ExecutionPolicy Bypass -File`).
 **No leer `engine.html` ni `render.js`: todo lo necesario está en `reference/api.md`.** Catálogo de escenas y tokens de look: `reference/escenas.md` · estilos: `estilos.md` · ejemplo: `reference/ejemplo/` · recetas: leer el índice (`node $SK/scripts/receta.js`) y como mucho 3 (`receta.js R03 R07`).
 Leer solo si aplica: `marca-nueva.md` · `voces.md` (otra voz, ElevenLabs, `say`/`pause`) · `envato.md` · `sfx.md` (SFX literales) · `premiere-y-versiones.md` (Premiere, LEEME, v2) · `preferencias.md`.
-**Cada video tiene diseño propio** aunque sea la misma marca (la marca fija fuentes, colores y logo): nunca reutilizar el look ni el concept de un video anterior.
+**Cada video tiene diseño propio** aunque sea la misma marca (la marca fija fuentes y colores): nunca reutilizar el look ni el concept de un video anterior.
 
 ## 0 · Marca y preguntas
 Leer el guion. Carpeta = la del guion o el directorio de trabajo. Salvo que el usuario ya dijo la marca: `$PY $SK/scripts/brand.py detect "<carpeta>"`. Si detecta, usarla sin preguntar y avisarlo en una línea. Si no (exit 2), preguntarla (`brand.py list` o *Marca nueva* → `marca-nueva.md`) y guardarla: `$PY $SK/scripts/brand.py remember "<carpeta>" <slug>` (también si el usuario corrige una detectada).
@@ -21,7 +21,8 @@ Preguntar **solo lo que falte, en una sola tanda**; si no falta nada, arrancar. 
 { "name": "NAME", "out_dir": "/abs/<carpeta>/NAME_MOTION", "edit_dir": "/abs/<carpeta>/NAME_MOTION",
   "format": "9:16", "fps": 30, "brand": "<slug>", "tail": 1.6, "keywords": ["palabra","clave"], "sfx_max": 6, "music": {} }
 ```
-`keywords` = 3–6 palabras del guion resaltadas. Opcionales: `"captions": false`, `"logo_corner": false`, `"premiere": false`.
+`keywords` = 3–6 palabras del guion resaltadas. Opcionales: `"captions": false`, `"premiere": false`.
+**Logo: nunca va en el video por defecto.** El logo de la marca es solo referencia para sacar colores, estilo y tipografías. Solo si el usuario pide expresamente el logo en el video: `"logo": true` (y `"logo_corner": false` para que no quede en la esquina).
 
 ## 2 · Guion → beats → voz
 **El guion es del usuario: no reescribir el contenido**, solo partirlo (beats de 1 frase, 2–6 s, ≈10–18 por minuto) y ajustar pronunciación (`say`, `pause`: `voces.md`). **Una sola voz por video**: mismo motor, modelo y ajustes; nunca mezclar ni completar con otra si ElevenLabs falla (frenar y avisar; `tts.py` lo hace cumplir con `voice.lock.json`; cambiar = `tts.py "<work>" --cambiar-voz`).

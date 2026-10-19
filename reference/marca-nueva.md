@@ -1,7 +1,7 @@
 # Marca nueva
 
 Segunda tanda de preguntas (todo junto, en una sola tanda):
-- **Nombre de la marca y logo** (ruta a PNG/SVG, o "sin logo"). **No preguntar ni guardar usuario de redes.** Si da logo: `$PY $SK/scripts/brand.py colors <logo>` y proponer la paleta a partir de esos colores.
+- **Nombre de la marca y logo** (ruta a PNG/SVG, o "sin logo"). **No preguntar ni guardar usuario de redes.** Si da logo: `$PY $SK/scripts/brand.py colors <logo>` y proponer la paleta a partir de esos colores; mirarlo también para inspirar el estilo y elegir tipografías afines. **El logo es solo referencia: no aparece en los videos** salvo pedido expreso (`"logo": true` en config.json).
 - **Colores** — opciones: *Sacarlos del logo* · *Negro + naranja* (editorial) · *Azul profundo + celeste* (salud/confianza) · *Verde + crema* (bienestar); o hex propios. Se necesitan 4: `dark` (fondo oscuro), `light` (fondo claro), `accent` (resaltado principal), `accent2` (secundario, opcional).
 - **Tipografías** — `brand.py fonts` lista combinaciones: *Editorial condensada* · *Moderna geométrica* · *Impacto* · *Elegante* (o cualquier familia de Google Fonts por nombre).
 - **Estilo** — subtítulos sí/no (por defecto sí), decorado de fondo: *grano + grilla + manchas de color* (default) · *anillos* · *puntos* · *limpio*.
