@@ -14,6 +14,7 @@ Leer solo si aplica: `marca-nueva.md` · `voces.md` (otra voz, ElevenLabs, `say`
 ## 0 · Marca y preguntas
 Leer el guion. Carpeta = la del guion o el directorio de trabajo. Salvo que el usuario ya dijo la marca: `$PY $SK/scripts/brand.py detect "<carpeta>"`. Si detecta, usarla sin preguntar y avisarlo en una línea. Si no (exit 2), preguntarla (`brand.py list` o *Marca nueva* → `marca-nueva.md`) y guardarla: `$PY $SK/scripts/brand.py remember "<carpeta>" <slug>` (también si el usuario corrige una detectada).
 Preguntar **solo lo que falte, en una sola tanda**; si no falta nada, arrancar. **Música y formato: no preguntar** (formato 9:16 salvo pedido). **Voz:** la de `brand.json` → `voice` sin preguntar; si no hay, *Mujer* o *Hombre* argentina (`{"id":"mujer"}`/`{"id":"hombre"}`).
+**Criterio de la marca:** si la carpeta de la marca (`~/.config/motion/brands/<slug>/`) tiene `IDENTIDAD.md` y/o `brand.json` trae `"notes"`, leerlos antes de diseñar y respetarlos en todo el video (rol de cada color, combinaciones, tono, qué evitar). Mandan sobre las preferencias del look; si chocan con un estilo curado, gana la marca.
 
 ## 1 · Preparación
 `NAME` en MAYÚSCULAS_CON_GUIONES; `work=<carpeta>/<NAME>_MOTION/.work`. `$PY $SK/scripts/timing.py start "<work>"` y `$PY $SK/scripts/doctor.py`. `<work>/config.json`:
@@ -37,7 +38,7 @@ Escribir **3 ideas madre de una línea** (metáfora visual que atraviese todo) y
 
 ## 3c · Dirección de arte (obligatorio)
 1. `node $SK/scripts/look.js new "<work>" --tono=<energico|calido|institucional|humor|sobrio> --estilo=<slug|auto>`: el estilo curado que sirva al tratamiento (`estilos.md`; `auto` = uno que la marca no usó en sus últimos 3 videos). Aplicar sus `estilo_reglas`.
-2. Ajustarlo a mano según el guion (tokens en `escenas.md`). Escribir `"concepto"` (idea visual en una línea) y `"concept_idea"` (qué cuenta el concept sin texto).
+2. Ajustarlo a mano según el guion (tokens en `escenas.md`). Escribir `"concepto"` (idea visual en una línea) y `"concept_idea"` (qué cuenta el concept sin texto). Respetar `IDENTIDAD.md` / `notes` de la marca (paso 0).
 3. `node $SK/scripts/render.js "<work>" --look-preview` → `look.jpg`. **Mirada 1**: contraste, que se sienta distinto y adecuado al tema.
 
 ## 4 · Storyboard → `<work>/story.js` + `<work>/scenes.js`
