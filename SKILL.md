@@ -48,6 +48,8 @@ API en `reference/api.md`. `S(tipo, inicio, params)` por escena, en orden; `inic
 - **1–3 placas `SC.<nombre>`** para el objeto héroe y las ideas que el catálogo no cuenta. **Meta: ≥ 40 % del tiempo en escenas a medida** (concept + SC propias; una placa puede repetirse con otros params). Adaptar las recetas, no copiarlas.
 
 **Criterio de dirección:**
+- **Fondos: predominan los CLAROS (`light`), con `accent` de vez en cuando y `dark` solo eventualmente (≈ 1 de cada 4–5 escenas).** No encadenar escenas oscuras ni repetir el mismo fondo dos veces seguidas; si ponés `bg` a mano en una placa, respetá esa proporción (`bg:'dark'` solo para un remate puntual). El motor ya rota así según `look.palette`; no forzar `palette:'dark'` salvo pedido expreso.
+- **Tipografías: solo 3** (títulos, lectura, etiquetas). No hay tipografía de acento: los subtítulos de las placas usan la de lectura.
 - **Gancho en los primeros 2 s** (`question`, `bigword`, `kinetic` o `title` fuerte, `bg` accent); primer cambio antes de 3–4 s.
 - **Ritmo**: una escena cada 3–5 s, cortes en el golpe, 1–2 respiros entre escenas secas. Nada quieto > ~5 s: que se vaya armando con ítems sincronizados.
 - **Variedad**: no repetir tipo seguido; máx. 2 `kinetic` seguidas; alternar texto y gráficas.

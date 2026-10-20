@@ -6,7 +6,7 @@ html,body{margin:0;background:#000;overflow:hidden}
 .disp{font-family:Display;font-weight:var(--dw);font-stretch:var(--ds);letter-spacing:var(--dt);line-height:var(--dl);text-transform:var(--du)}
 .body{font-family:Body;font-weight:var(--bw);letter-spacing:-.015em;line-height:1.08}
 .mono{font-family:Mono;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
-.acc{font-family:Accent;font-style:var(--ai);font-weight:400;text-transform:none;letter-spacing:-.01em;line-height:1.02}
+.acc{font-family:Accent;font-style:normal;font-weight:var(--bw);text-transform:none;letter-spacing:-.015em;line-height:1.15;padding-top:.08em}   /* sin tipografía de acento: es la de lectura (Body) */
 .nw{white-space:nowrap}
 #stage,#stage *{hyphens:none;-webkit-hyphens:none;word-break:normal;overflow-wrap:normal}   /* nunca partir palabras */
 .m{overflow:hidden;display:block;padding:.14em 0 .08em;margin:-.14em 0 -.08em}
@@ -27,7 +27,7 @@ html,body{margin:0;background:#000;overflow:hidden}
 .kick .nm{color:var(--hl)}
 #stage[data-kick=tag] .kick{background:var(--hl);color:var(--hlfg);padding:.45em .8em;border-radius:calc(var(--r)*.35);opacity:1}
 #stage[data-kick=plain] .kick{opacity:.62}
-#stage[data-kf=accent] .kick{font-family:Accent;font-style:var(--ai);font-weight:400;letter-spacing:0;text-transform:none;font-size:46px}
+#stage[data-kf=accent] .kick{font-family:Accent;font-style:normal;font-weight:var(--bw);letter-spacing:0;text-transform:none;font-size:46px}
 #stage[data-kf=body] .kick{font-family:Body;font-weight:800;letter-spacing:.06em;font-size:30px}
 /* estilo del resaltado H() según el look */
 #stage[data-hl=underline] .hlb{background:linear-gradient(var(--hl),var(--hl)) 0 94%/100% .13em no-repeat;color:inherit;padding:0 .02em}
@@ -149,11 +149,11 @@ function applyTheme(el,th){el.style.setProperty('--bg',th.bg);el.style.setProper
  el.style.setProperty('--hlfg',th.hlfg);el.style.setProperty('--hl2fg',th.hl2fg);el.style.setProperty('--sub',`color-mix(in srgb, ${th.fg} 62%, ${th.bg})`);}
 function applyBrand(){const f=BR.fonts,css=[],R=document.documentElement.style;
  const alias={display:'Display',body:'Body',mono:'Mono',accent:'Accent'};
- for(const k in alias){const ff=f[k]||f.body;for(const x of ff.files||[])css.push(`@font-face{font-family:${alias[k]};src:url("${x.url}");font-weight:${x.weight||400};font-style:${x.style||'normal'};font-stretch:50% 200%}`);}
+ for(const k in alias){const ff=(k==='accent'?f.body:f[k])||f.body;for(const x of ff.files||[])css.push(`@font-face{font-family:${alias[k]};src:url("${x.url}");font-weight:${x.weight||400};font-style:${x.style||'normal'};font-stretch:50% 200%}`);}
  document.getElementById('fontfaces').textContent=css.join('\n');
  const d=f.display||{};R.setProperty('--dw',d.weight||800);R.setProperty('--ds',d.stretch||'100%');R.setProperty('--dt',d.tracking||'-0.02em');
  R.setProperty('--dl',d.leading||.92);R.setProperty('--du',d.upper===false?'none':'uppercase');R.setProperty('--bw',(f.body||{}).weight||700);
- R.setProperty('--ai',(f.accent||{}).italic?'italic':'normal');R.setProperty('--r',(LOOK.radius??(BR.style||{}).radius??36)+'px');
+ R.setProperty('--ai','normal');R.setProperty('--r',(LOOK.radius??(BR.style||{}).radius??36)+'px');
  for(const k of['dark','light','accent','accent2','mute'])if(BR.colors[k])R.setProperty('--'+k,BR.colors[k]);}
 
 // ───────── layout ─────────

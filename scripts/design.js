@@ -2,8 +2,9 @@
 const fs=require('fs'),path=require('path'),os=require('os'),crypto=require('crypto');
 
 // rotación de fondos según look.palette
-exports.PAL={classic:['dark','light','dark','accent'],dark:['dark','dark','accent','dark','light'],light:['light','light','accent','light','dark'],
-  blocks:['accent','dark','accent','light'],duo:['dark','light'],accent2:['dark','accent2','light','accent']};
+exports.PAL={classic:['light','accent','light','dark','light'],dark:['dark','light','accent','light','dark','light'],light:['light','accent','light','light','dark','light'],
+  blocks:['light','accent','light','dark','accent'],duo:['light','dark','light','light'],accent2:['light','accent2','light','accent','light','dark']};
+// fondos: predominan los claros y el oscuro entra de vez en cuando (≈ 1 de cada 4-5); render.js evita repetir el mismo fondo en escenas seguidas
 // variantes de layout por escena (la primera es el diseño clásico); tienen que coincidir con engine/engine.html
 exports.VARIANTS={title:['stack','offset','framed','mask'],kinetic:['rise','pop','light','slam','track','stackup'],bigword:['letters','outline','echo','slam'],stat:['bar','giant','ring','split'],
   list:['rows','cards','bignum'],steps:['line','cards'],compare:['panels','strike','split'],quote:['mark','bar'],bars:['bars','columns'],donut:['ring','dots'],

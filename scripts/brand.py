@@ -56,6 +56,7 @@ def setup(slug):
     if not os.path.exists(p): raise SystemExit(f'No existe {p}: crear la marca en {os.path.join(UB,slug)}/brand.json (copiar brands/editorial/brand.json)')
     b=json.load(open(p))
     for k,f in b.get('fonts',{}).items():
+        if k=='accent': continue   # sin tipografía de acento: solo títulos, lectura y etiquetas
         files=f.get('files') or []
         if files and all(os.path.exists(os.path.join(d,x['file'])) or os.path.exists(x['file']) for x in files): continue
         w=f.get('weight',800 if k=='display' else 700 if k=='body' else 400);ws={400,int(w)} if k!='accent' else {400}

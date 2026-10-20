@@ -15,23 +15,24 @@ const pick=(r,opts)=>{const e=Object.entries(opts).filter(([,w])=>w>0),tot=e.red
 
 // sesgos por tono (multiplican el peso base 1)
 const TONE={
-  energico:{motion:{snappy:4,bouncy:1.5,smooth:.3},palette:{blocks:3,dark:2},trans:{sharp:3,graphic:2},decor:{stripes:2,glyph:2,lines:1.5},hl:{box:2,pill:1.5},cam:{zoom:2,pull:1.5}},
+  energico:{motion:{snappy:4,bouncy:1.5,smooth:.3},palette:{blocks:3,dark:1},trans:{sharp:3,graphic:2},decor:{stripes:2,glyph:2,lines:1.5},hl:{box:2,pill:1.5},cam:{zoom:2,pull:1.5}},
   calido:{motion:{smooth:4,snappy:.5,bouncy:.4},palette:{light:3,classic:1.5},trans:{fluid:3},decor:{blobs:2,sun:3,gradient:2},hl:{marker:3,pill:2},radius:{56:3,36:2},panel:{soft:2,solid:2}},
   institucional:{motion:{smooth:2,snappy:2,bouncy:.2},palette:{light:2,duo:2},trans:{editorial:3},decor:{grid:0,lines:3,glyph:1.5,orbit:1.5},hl:{underline:3,box:1.5},frame:{column:3,border:2},panel:{outline:3,flat:2},radius:{0:2,12:2}},
   humor:{motion:{bouncy:4,smooth:.5},palette:{blocks:2,accent2:2},trans:{fluid:2,graphic:2},decor:{dots:3,halftone:2,orbit:2},hl:{pill:3,outline:2},panel:{offset:4},captions:{box:3}},
-  sobrio:{motion:{snappy:2,smooth:2,bouncy:.2},palette:{dark:3,light:2},trans:{editorial:2,sharp:2},decor:{lines:3,glyph:2,orbit:2},frame:{corners:3},hl:{underline:2,outline:2},panel:{outline:2,flat:2},cam:{drift:2,none:2}}};
+  sobrio:{motion:{snappy:2,smooth:2,bouncy:.2},palette:{dark:1,light:3},trans:{editorial:2,sharp:2},decor:{lines:3,glyph:2,orbit:2},frame:{corners:3},hl:{underline:2,outline:2},panel:{outline:2,flat:2},cam:{drift:2,none:2}}};
 const TRANS_FAM={sharp:['cut','wipex','split'],fluid:['circle','zoom','shape'],editorial:['wipe','slide','push'],graphic:['diag','blinds','wipex']};
 
 function candidate(r,tone,brand,prev){const T=TONE[tone]||{},w=(k,base)=>{const o={};for(const x of base)o[x]=((T[k]||{})[x]??1);return o;};
   const has2=!!brand.colors.accent2,L={};
-  L.palette=pick(r,w('palette',['classic','dark','light','blocks','duo',...(has2?['accent2']:[])]));
+  const pw=w('palette',['classic','dark','light','blocks','duo',...(has2?['accent2']:[])]);pw.dark*=.35;pw.light*=1.5;pw.classic*=1.3;   // fondos claros primero, oscuros solo eventualmente
+  L.palette=pick(r,pw);
   L.hlPrefer=has2&&r()<.3?'accent2':'accent';
   L.align=pick(r,{left:5,center:2,mixed:1.5,right:.6});
   L.valign=pick(r,{center:6,top:2.5,bottom:1.5});
   L.frame=pick(r,{none:4,...w('frame',['border','corners','column'])});if(L.frame==='column'&&L.align!=='left')L.align='left';
   L.scale=+pick(r,{'0.9':1,'1':2,'1.1':1.5});
   L.kick=pick(r,w('kick',['dot','line','number','bracket','tag','plain']));
-  L.kickFont=L.kick==='tag'?'mono':pick(r,{mono:3,accent:1,body:1.5});
+  L.kickFont=L.kick==='tag'?'mono':pick(r,{mono:3,body:1.5});
   L.hl=pick(r,w('hl',['box','underline','marker','outline','pill']));
   L.panel=pick(r,w('panel',['soft','outline','solid','offset','flat']));
   L.radius=+pick(r,w('radius',['0','12','24','36','56']));

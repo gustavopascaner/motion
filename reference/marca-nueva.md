@@ -7,7 +7,7 @@ Segunda tanda de preguntas (todo junto, en una sola tanda):
 - **Estilo** — subtítulos sí/no (por defecto sí), decorado de fondo: *grano + grilla + manchas de color* (default) · *anillos* · *puntos* · *limpio*.
 
 Armado:
-1. Crear `~/.config/motion/brands/<slug>/brand.json` (fuera del repo: sobrevive a reinstalar y actualizar la skill) copiando `$SK/brands/editorial/brand.json`. En cada tipografía dejar solo `family`, `weight`, y para títulos `upper`/`stretch`/`tracking`/`leading`; para acento `italic`. Poner `logo` con la ruta absoluta.
+1. Crear `~/.config/motion/brands/<slug>/brand.json` (fuera del repo: sobrevive a reinstalar y actualizar la skill) copiando `$SK/brands/editorial/brand.json`. En cada tipografía dejar solo `family`, `weight`, y para títulos `upper`/`stretch`/`tracking`/`leading`; **sin tipografía de acento** (solo `display`, `body`, `mono`). Poner `logo` con la ruta absoluta.
 2. `$PY $SK/scripts/brand.py setup <slug>` — baja las fuentes, copia el logo, chequea contraste: corregir los ⚠️.
 3. `$PY $SK/scripts/brand.py remember "<carpeta>" <slug>` (así la carpeta queda asociada a la marca para motion y edicion).
 4. Muestra: `node $SK/scripts/render.js --brand-preview=<slug> --out=<work>/marca.jpg --format=<formato>` → mirar la imagen y mostrársela al usuario; confirmar antes de seguir (es rápido de ajustar).

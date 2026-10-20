@@ -67,7 +67,7 @@ function build(WD){
   const ROT=(PAL[look.palette]||PAL.classic).filter(k=>brand.colors[k]),TRS=look.transitions&&look.transitions.length?look.transitions:['wipe','slide','circle','push','zoom'];let ti=0;
   const NOCAP=new Set(['kinetic','quote']);
   sc.forEach((x,i)=>{x.e=i<sc.length-1?sc[i+1].s:total;x.i=i;const p=x.p;
-    x.bg=p.bg||(x.type==='image'?'dark':ROT[i%ROT.length]);
+    x.bg=p.bg||(x.type==='image'?'dark':(()=>{let b=ROT[i%ROT.length];if(i&&sc[i-1].bg===b){b=ROT.slice(i%ROT.length).concat(ROT).find(k=>k!==sc[i-1].bg)||b;}return b;})());   // sin repetir el fondo de la escena anterior
     x.tr=i===0?(p.tr||'cut'):p.tr||(()=>{if(TRS.length<2)return TRS[0];let t;do{t=TRS[ti++%TRS.length]}while(t===sc[i-1].tr);return t;})();
     x.cap=p.cap!==undefined?p.cap:!NOCAP.has(x.type);
     if(x.type==='image'){const src=path.isAbsolute(p.src)?p.src:path.join(WD,p.src);if(!fs.existsSync(src))throw new Error('no existe la imagen '+src);p.url=fileURL(src);}
