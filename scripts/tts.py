@@ -8,10 +8,11 @@ uso: $PY tts.py <work> [--cambiar-voz] lee <work>/script.json → <work>/voice.w
 
 script.json:
 { "voice": {"id":"mujer"}          ← "mujer" = Agustina · "hombre" = Manuel (ElevenLabs si hay clave; si no, Elena / Tomás de edge-tts)
-             o una voz puntual: {"engine":"edge", "id":"es-AR-ElenaNeural", "rate":"+5%", "pitch":"+0Hz"},
+             o una voz puntual: {"engine":"edge", "id":"es-AR-ElenaNeural", "rate":"+10%", "pitch":"+0Hz"},
   "lead": 0.35,                      ← segundos de imagen antes de que arranque la voz
   "beats": [ {"id":"b01", "text":"¿Sabés por qué…?", "say":"(opcional: texto para pronunciar)", "pause":0.25}, … ] }
-engine "eleven": {"engine":"eleven","id":"<voice_id>","model":"eleven_multilingual_v2","stability":0.45,"similarity":0.8,"style":0.2,"speed":1.05}
+engine "eleven": {"engine":"eleven","id":"<voice_id>","model":"eleven_v4","stability":0.45,"similarity":0.8,"style":0.2,"speed":1.1}
+Por defecto: modelo eleven_v4 y ritmo 10 % más rápido que la voz normal (ElevenLabs speed 1.1 · edge rate +10%), con la velocidad nativa del motor.
 Clave de ElevenLabs: variable ELEVENLABS_API_KEY o el archivo ~/.config/motion/elevenlabs_key (fuera del repo).
 Con ElevenLabs cada beat se genera con el texto anterior y el siguiente como contexto, para que la entonación sea continua.
 Cada beat se cachea (solo se regenera lo que cambió). Voces argentinas de edge: es-AR-ElenaNeural (mujer) · es-AR-TomasNeural (hombre).
@@ -120,8 +121,19 @@ def resolve(v):
     if g not in('mujer','hombre'): return v
     eng=v.get('engine') or ('eleven' if eleven_key(False) else 'edge')
     vid,name=DEFAULTS[eng][g];r={**v,'engine':eng,'id':vid,'name':name}
-    if eng=='edge': r.setdefault('rate','+5%')
     print(f'voz por defecto ({g}): {name} · {"ElevenLabs" if eng=="eleven" else "edge-tts (gratis)"}');return r
+
+# AJUSTES POR DEFECTO: modelo eleven_v4 y ritmo 10 % más rápido que la voz normal, con la velocidad propia del motor
+# (no se acelera el audio después, así suena natural). Un valor explícito en la voz manda. Los videos con la voz ya
+# bloqueada sin estos ajustes conservan los suyos (v2, velocidad normal), para no mezclar ni frenarlos al iterar.
+PACE={'eleven':{'model':'eleven_v4','speed':1.1},'edge':{'rate':'+10%'}}
+def pace(v,W=None,change=False):
+    d={k:x for k,x in PACE.get(v.get('engine') or 'edge',{}).items() if k not in v}
+    f=os.path.join(W,'voice.lock.json') if W else ''
+    if d and f and os.path.exists(f) and not change:
+        old=json.load(open(f))
+        if old.get('engine')==v.get('engine') and old.get('id')==v.get('id'): d={k:old[k] for k in d if k in old}   # video ya bloqueado: lo mismo que tenía
+    return {**v,**d}
 
 # UNA SOLA VOZ POR VIDEO: la voz queda bloqueada en <work>/voice.lock.json la primera vez. Si después se pide otra
 # (otra voz, otro motor, otro modelo o ajustes), se frena: cambiarla exige regenerar TODA la locución (--cambiar-voz).
@@ -138,7 +150,7 @@ def lock_check(W,v,change):
     json.dump({**cur,'name':v.get('name') or v['id']},open(f,'w'),ensure_ascii=False,indent=1)
 
 def run(W,change=False):
-    t0=time.time();S=json.load(open(os.path.join(W,'script.json')));v=resolve(S['voice']);lead=S.get('lead',.35)
+    t0=time.time();S=json.load(open(os.path.join(W,'script.json')));v=pace(resolve(S['voice']),W,change);lead=S.get('lead',.35)
     bad=[f"{b.get('id','?')}: {sorted(set(b)-{'id','text','say','pause'})}" for b in S['beats'] if set(b)-{'id','text','say','pause'}]
     if bad: raise SystemExit('✗ Los beats solo admiten id, text, say y pause (la voz es una sola para todo el video). Sobran: '+'; '.join(bad))
     lock_check(W,v,change)
@@ -195,7 +207,7 @@ def samples(out,text,ids):
     os.makedirs(out,exist_ok=True)
     for k,vid in enumerate(ids,1):
         edge=bool(re.match(r'^[a-z]{2}-[A-Z]{2}-',vid));f=os.path.join(out,f"{k:02d}_{'edge' if edge else 'eleven'}_{re.sub(r'[^A-Za-z0-9-]','',vid)[:24]}.mp3")
-        edge_tts(text,{'id':vid,'rate':'+5%'},f) if edge else eleven(text,{'engine':'eleven','id':vid},f);print('✓',f)
+        edge_tts(text,pace({'engine':'edge','id':vid}),f) if edge else eleven(text,pace({'engine':'eleven','id':vid}),f);print('✓',f)
 
 if __name__=='__main__':
     a=sys.argv[1:]
