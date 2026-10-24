@@ -9,6 +9,7 @@ Entrada: guion (texto o archivo). Salida: `<carpeta>/<NAME>_MOTION/` (MP4, `Asse
 `SK` = carpeta de la skill (`~/.claude/skills/motion` o `~/.codex/skills/motion`). `PY` = `$SK/.venv/bin/python -I` (Windows `$SK\.venv\Scripts\python.exe -I`) para todos los `.py`. Si `doctor.py` marca ✗: `bash $SK/scripts/install.sh` (Windows: `install.ps1` con `powershell -ExecutionPolicy Bypass -File`).
 **No leer `engine.html` ni `render.js`: todo lo necesario está en `reference/api.md`.** Catálogo de escenas y tokens de look: `reference/escenas.md` · estilos: `estilos.md` · ejemplo: `reference/ejemplo/` · recetas: leer el índice (`node $SK/scripts/receta.js`) y como mucho 3 (`receta.js R03 R07`).
 Leer solo si aplica: `marca-nueva.md` · `voces.md` (otra voz, ElevenLabs, `say`/`pause`) · `envato.md` · `sfx.md` (SFX literales) · `versiones.md` (LEEME, v2) · `preferencias.md`.
+**Dos modos** (conviven): **`libre`** = el video se dibuja a mano en canvas, con un protagonista ilustrado y un mundo propio (`reference/libre.md`); **`placas`** = catálogo de escenas del motor (pasos 3b–5 de abajo). Modo = el que pida el usuario para este video ("en modo placas", "en modo libre"); si no dice, `prefs.json` → `"modo"` (default `placas` si falta). Va en `config.json` → `"modo"`.
 **Cada video tiene diseño propio** aunque sea la misma marca (la marca fija fuentes y colores): nunca reutilizar el look ni el concept de un video anterior.
 
 ## 0 · Marca y preguntas
@@ -20,7 +21,7 @@ Preguntar **solo lo que falte, en una sola tanda**; si no falta nada, arrancar. 
 `NAME` en MAYÚSCULAS_CON_GUIONES; `work=<carpeta>/<NAME>_MOTION/.work`. `$PY $SK/scripts/timing.py start "<work>"` y `$PY $SK/scripts/doctor.py`. `<work>/config.json`:
 ```json
 { "name": "NAME", "out_dir": "/abs/<carpeta>/NAME_MOTION", "edit_dir": "/abs/<carpeta>/NAME_MOTION",
-  "format": "9:16", "fps": 30, "brand": "<slug>", "tail": 1.6, "keywords": ["palabra","clave"], "sfx_max": 6, "music": {} }
+  "format": "9:16", "fps": 30, "brand": "<slug>", "tail": 1.6, "keywords": ["palabra","clave"], "sfx_max": 6, "music": {}, "modo": "libre|placas" }
 ```
 `keywords` = 3–6 palabras del guion resaltadas. Opcional: `"captions": false`.
 **Logo: nunca va en el video por defecto.** El logo de la marca es solo referencia para sacar colores, estilo y tipografías. Solo si el usuario pide expresamente el logo en el video: `"logo": true`; si la marca lo fija (`brand.json` → `"logo_video": true`) va siempre, salvo `"logo": false` (y `"logo_corner": false` para que no quede en la esquina).
@@ -33,15 +34,18 @@ Preguntar **solo lo que falte, en una sola tanda**; si no falta nada, arrancar. 
 Si el usuario dio una: `"music": {"path": "/abs/tema.mp3", "offset": 0}`. Si no, elegirla según tono, tema y público (mapa tono → mood/tempo en `envato.md`), siempre instrumental: `$PY $SK/scripts/envato.py search "<work>" music "<estilo en inglés>" --mood <mood> --tempo "<tempo>" [--genre <género>]`, elegir por tono y energía pareja, y `$PY $SK/scripts/envato.py use "<work>" music <búsqueda>#<n>`; `offset` = segundo donde entra la parte con energía. Licenciar y descargar la original (la preview tiene marca de agua): `envato.md` (si `prefs.json` → `envato.auto_license` es `true`, sin preguntar; nunca usuario/contraseña; si falla, seguir con la preview y avisar).
 Después: `$PY $SK/scripts/beats.py "<work>"` → `beats.json` (los cortes caen en el golpe).
 
-## 3b · Tratamiento (obligatorio, corto)
+## Modo libre: 3b–5
+Seguir `reference/libre.md` (historial → `tratamiento.json` → `storyboard.md` → `libre.js init` → `anim.js` → `libre.js stills` + revisión de director → `finish.sh` → LEEME → respuesta como en el paso 5). Los pasos 3b–4 y 5.1–5.2 de abajo son solo del modo placas; 4b (sonido) y 5.3–5.5 valen para los dos.
+
+## 3b · Tratamiento (obligatorio, corto) — modo placas
 Escribir **3 ideas madre de una línea** (metáfora visual que atraviese todo) y elegir la más audaz que se entienda. De ahí salen el **objeto héroe** (reaparece y se transforma en 3+ escenas), los **3–4 momentos fuertes** (gancho, giro, dato, remate: slam, punch, `layers`/`morph`, concept) y los match cut entre temas. Va en `look.json` → `"tratamiento"` (2–3 líneas); no mostrárselo al usuario.
 
-## 3c · Dirección de arte (obligatorio)
+## 3c · Dirección de arte (obligatorio) — modo placas
 1. `node $SK/scripts/look.js new "<work>" --tono=<energico|calido|institucional|humor|sobrio> --estilo=<slug|auto>`: el estilo curado que sirva al tratamiento (`estilos.md`; `auto` = uno que la marca no usó en sus últimos 3 videos). Aplicar sus `estilo_reglas`.
 2. Ajustarlo a mano según el guion (tokens en `escenas.md`). Escribir `"concepto"` (idea visual en una línea) y `"concept_idea"` (qué cuenta el concept sin texto). Respetar `IDENTIDAD.md` / `notes` de la marca (paso 0).
 3. `node $SK/scripts/render.js "<work>" --look-preview` → `look.jpg`. **Mirada 1**: contraste, que se sienta distinto y adecuado al tema.
 
-## 4 · Storyboard → `<work>/story.js` + `<work>/scenes.js`
+## 4 · Storyboard → `<work>/story.js` + `<work>/scenes.js` — modo placas
 API en `reference/api.md`. `S(tipo, inicio, params)` por escena, en orden; `inicio` = id de beat o `w('palabra')`; tiempos internos también con `w()` (sincronizados con la voz).  Variantes `v`: la misma placa con la misma variante no más de 2 veces.
 **A medida (obligatorio) en `scenes.js`:**
 - **Concept SIEMPRE nuevo, desde cero**: motion graphic SIN TEXTO de 3–4 s con la idea del guion que más gane como imagen. `MOT.<nombre_propio>` y `S('concept', …, {motif:'<nombre_propio>', at: w('palabra clave')})`. Los motivos del motor son solo referencia: nunca usarlos ni copiarlos (`render.js` frena el render si es de biblioteca, repetido en la marca o falta; en videos < 30 s falta es solo aviso).
@@ -62,8 +66,8 @@ Automático (whoosh suave, ding/pop/click); el video arranca sin SFX. **Prohibid
 ## 5 · Chequeo, director y entrega
 1. `node $SK/scripts/render.js "<work>" --check` → plan (escenas, SFX, avisos de **Dirección**) + `sheet.jpg` (5 cuadros por escena; los primeros muestran cómo ENTRA). Corregir todos los ✗ (frenan el render) y ⚠️, textos achicados ("se achicó al N %"), superposiciones con subtítulos, poco contraste y escenas vacías a la mitad. **Mirada 2.**
 2. **Revisión de director (una sola ronda, máx. 2 escenas rehechas):** puntuar cada escena 1–5 en *potencia* (movimiento con intención), *idea* (cuenta algo o decora) y *continuidad* (objeto héroe / estilo); rehacer las **2 peores** (más movimiento, otra receta, otra transición) sin iterar más; puntajes en `<work>/direccion.md` (una línea por escena). Correr de nuevo `--check` y mirar la hoja: **Mirada 3** (solo 3 miradas por video).
-3. **Cierre** (en segundo plano): `bash $SK/scripts/finish.sh "<work>"` (Windows: `finish.ps1`). Hace render + `mix.py` + `qc.py` (duración vs. voz, audio, cuadros negros/congelados) + `look.js log` + `timing.py report`; detalle en `<work>/finish.log`. Si el QC avisa algo, corregir y repetir el paso afectado. No mirar cuadros del MP4.
-4. `LEEME.md` en `out_dir` (contenido en `versiones.md` → *LEEME.md*).
+3. **Cierre** (en segundo plano): `bash $SK/scripts/finish.sh "<work>"` (Windows: `finish.ps1`). Hace render (`render.js` o, en modo libre, `libre.js render`) + `mix.py` + `qc.py` (duración vs. voz, audio, cuadros negros/congelados) + historial (`look.js log` / `libre.js log`) + `timing.py report`; detalle en `<work>/finish.log`. Si el QC avisa algo, corregir y repetir el paso afectado. No mirar cuadros del MP4.
+4. `LEEME.md` en `out_dir` (contenido en `versiones.md` → *LEEME.md*; incluye el modo y el consumo del plan).
 5. Responder corto: ruta del MP4, duración, voz y música (una línea de por qué y "música licenciada: <tema> de <autor>" más el aviso de Claim Clear si corresponde; o que quedó la preview y por qué), escenas destacadas, tiempo total.
 
 ## Versiones (v2, ajustes)

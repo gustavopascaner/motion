@@ -47,4 +47,12 @@ if HOME="$T/home" node "$SK/scripts/render.js" "$W" --check --at=0.2,end > "$T/c
 else bad "render.js --check"; cat "$T/check.txt"; fi
 node "$SK/scripts/receta.js" | grep -q 'R03' && node "$SK/scripts/receta.js" R03 | head -1 | grep -q 'R03' && ! node "$SK/scripts/receta.js" R99 >/dev/null 2>&1 && ok "receta.js (índice y receta suelta)" || bad "receta.js"
 
+# 6 · modo libre: plantilla e init/stills con el ejemplo; detecta textos fuera del cuadro
+for f in "$SK"/libre/*.js "$SK"/reference/ejemplo-libre/anim.js; do node --check "$f" 2>/dev/null || bad "sintaxis $f"; done
+L="$T/libre"; mkdir -p "$L"; cp "$W/words.json" "$L/"; sed 's/"brand":"editorial"/"brand":"editorial","modo":"libre"/' "$W/config.json" > "$L/config.json"
+if HOME="$T/home" node "$SK/scripts/libre.js" init "$L" > "$T/li.txt" 2>&1 && HOME="$T/home" node "$SK/scripts/libre.js" stills "$L" --at=0.5,2 > "$T/ls.txt" 2>&1 && [ -s "$L/sheet.jpg" ] && ! grep -q '✗' "$T/ls.txt"; then ok "modo libre: init + stills con la plantilla"
+else bad "modo libre: init/stills"; cat "$T/li.txt" "$T/ls.txt"; fi
+printf "function S(T){bg(COL.light);txt('ESTE TÍTULO ES DEMASIADO LARGO PARA EL CUADRO',90,400,{size:140});}\nSEC(0,S);\n" > "$L/anim.js"
+HOME="$T/home" node "$SK/scripts/libre.js" stills "$L" --at=1 > "$T/lw.txt" 2>&1; grep -q 'fuera del cuadro' "$T/lw.txt" && ok "modo libre: avisa textos fuera del cuadro" || { bad "modo libre: no avisó texto fuera del cuadro"; cat "$T/lw.txt"; }
+
 echo; [ $fail = 0 ] && echo "Todo bien ✓" || echo "Hay fallas ✗"; exit $fail
