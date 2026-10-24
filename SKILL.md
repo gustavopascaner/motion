@@ -23,7 +23,7 @@ Preguntar **solo lo que falte, en una sola tanda**; si no falta nada, arrancar. 
   "format": "9:16", "fps": 30, "brand": "<slug>", "tail": 1.6, "keywords": ["palabra","clave"], "sfx_max": 6, "music": {} }
 ```
 `keywords` = 3–6 palabras del guion resaltadas. Opcional: `"captions": false`.
-**Logo: nunca va en el video por defecto.** El logo de la marca es solo referencia para sacar colores, estilo y tipografías. Solo si el usuario pide expresamente el logo en el video: `"logo": true` (y `"logo_corner": false` para que no quede en la esquina).
+**Logo: nunca va en el video por defecto.** El logo de la marca es solo referencia para sacar colores, estilo y tipografías. Solo si el usuario pide expresamente el logo en el video: `"logo": true`; si la marca lo fija (`brand.json` → `"logo_video": true`) va siempre, salvo `"logo": false` (y `"logo_corner": false` para que no quede en la esquina).
 
 ## 2 · Guion → beats → voz
 **El guion es del usuario: no reescribir el contenido**, solo partirlo (beats de 1 frase, 2–6 s, ≈10–18 por minuto) y ajustar pronunciación (`say`, `pause`: `voces.md`). **Una sola voz por video**: mismo motor, modelo y ajustes; nunca mezclar ni completar con otra si ElevenLabs falla (frenar y avisar; `tts.py` lo hace cumplir con `voice.lock.json`; cambiar = `tts.py "<work>" --cambiar-voz`).

@@ -21,8 +21,10 @@ function loadBrand(slug,useLogo){const dir=require('./design.js').brandDir(slug)
   const b=JSON.parse(fs.readFileSync(f,'utf8'));
   for(const k in b.fonts||{})for(const x of b.fonts[k].files||[]){const p=path.isAbsolute(x.file)?x.file:path.join(dir,x.file);
     if(!fs.existsSync(p))throw new Error(`Falta la tipografía ${p}: correr brand.py setup ${slug}`);x.url=fileURL(p);}
-  // El logo de la marca es solo referencia (colores, estilo): entra al video únicamente con "logo": true en config.json.
-  if(b.logo&&useLogo){const p=path.isAbsolute(b.logo)?b.logo:path.join(dir,b.logo);if(fs.existsSync(p))b.logoURL=fileURL(p);else console.warn('⚠️  no encuentro el logo',p);}
+  // El logo de la marca es solo referencia (colores, estilo): entra al video con "logo": true en config.json,
+  // o si la marca lo fija con "logo_video": true en brand.json (salvo "logo": false en config.json).
+  if(useLogo===undefined||useLogo===null)useLogo=b.logo_video===true;
+  if(b.logo&&useLogo===true){const p=path.isAbsolute(b.logo)?b.logo:path.join(dir,b.logo);if(fs.existsSync(p))b.logoURL=fileURL(p);else console.warn('⚠️  no encuentro el logo',p);}
   return b;}
 
 // ───── look (dirección de arte del video) y diseño a medida: ver scripts/design.js ─────
@@ -37,7 +39,7 @@ function sfxDir(){const c=[path.join(SK,'assets','sfx'),...['.claude','.codex'].
 function build(WD){
   const cfg=JSON.parse(fs.readFileSync(path.join(WD,'config.json'),'utf8'));
   const [W,H]=FORMATS[cfg.format||'9:16']||cfg.size;const FPS=cfg.fps||30;
-  const brand=loadBrand(cfg.brand||'editorial',cfg.logo===true);const vo=JSON.parse(fs.readFileSync(path.join(WD,'words.json'),'utf8'));
+  const brand=loadBrand(cfg.brand||'editorial',cfg.logo);const vo=JSON.parse(fs.readFileSync(path.join(WD,'words.json'),'utf8'));
   const words=vo.words,beats=vo.beats,
     // lo que se muestra: si el beat tenía "say", cada palabra trae "d" (texto escrito; "" = se une a la anterior) y "de" (fin del grupo)
     shown=words.filter(x=>x.d!=='').map(x=>({...x,w:x.d??x.w,e:x.de??x.e})),total=+(vo.voice_end+(cfg.tail??1.6)).toFixed(3);
@@ -224,7 +226,7 @@ async function full(WD){const t0=Date.now();const {tl}=build(WD);gate(tl,WD);con
   const secs=(Date.now()-t0)/1000;console.log(`${VERBOSE?'\n':''}✓ ${out} (${nf} cuadros en ${secs.toFixed(0)} s)`);logTime(WD,'Render de video',secs);}
 
 async function lookPreview(WD){const cfg=JSON.parse(fs.readFileSync(path.join(WD,'config.json'),'utf8'));const [W,H]=FORMATS[cfg.format||'9:16'];
-  const brand=loadBrand(cfg.brand||'editorial',cfg.logo===true),look=loadLook(WD,brand),custom=fs.existsSync(path.join(WD,'scenes.js'))?path.join(WD,'scenes.js'):null;
+  const brand=loadBrand(cfg.brand||'editorial',cfg.logo),look=loadLook(WD,brand),custom=fs.existsSync(path.join(WD,'scenes.js'))?path.join(WD,'scenes.js'):null;
   const ROT=(PAL[look.palette]||PAL.classic).filter(k=>brand.colors[k]);
   const sc=[{type:'title',p:{kick:'EL TEMA',lines:['UN TÍTULO','CON <span class="hlb">ESTILO</span>'],sub:'y un acento'}},
     {type:'stat',p:{kick:'DATO',value:73,suffix:'%',label:'DE LOS PACIENTES',sub:'Fuente: ejemplo'}},

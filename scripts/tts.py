@@ -12,6 +12,7 @@ script.json:
   "lead": 0.35,                      ← segundos de imagen antes de que arranque la voz
   "beats": [ {"id":"b01", "text":"¿Sabés por qué…?", "say":"(opcional: texto para pronunciar)", "pause":0.25}, … ] }
 engine "eleven": {"engine":"eleven","id":"<voice_id>","model":"eleven_v4","stability":0.45,"similarity":0.8,"style":0.2,"speed":1.1}
+Voz clonada de un cliente (la guarda /marca en brand.json): además "clone_strength":1.0 y "lang":null (sin language_code).
 Por defecto: modelo eleven_v4 y ritmo 10 % más rápido que la voz normal (ElevenLabs speed 1.1 · edge rate +10%), con la velocidad nativa del motor.
 Clave de ElevenLabs: variable ELEVENLABS_API_KEY o el archivo ~/.config/motion/elevenlabs_key (fuera del repo).
 Con ElevenLabs cada beat se genera con el texto anterior y el siguiente como contexto, para que la entonación sea continua.
@@ -58,8 +59,10 @@ def eleven_req(url,body=None,tries=4):
             raise SystemExit(f'ElevenLabs {e.code}: {hint}\n{msg}')
 def eleven(text,v,mp3,prev=None,nxt=None):
     model=v.get('model','eleven_multilingual_v2')
-    body={'text':text,'model_id':model,'language_code':v.get('lang','es'),
+    body={'text':text,'model_id':model,
           'voice_settings':{'stability':v.get('stability',.45),'similarity_boost':v.get('similarity',.8),'style':v.get('style',.2),'use_speaker_boost':True,'speed':v.get('speed',1.0)}}
+    if v.get('lang','es'): body['language_code']=v.get('lang','es')   # clones de clientes: "lang": null (con "es" v4 los empuja a acento de España)
+    if 'clone_strength' in v: body['voice_settings']['clone_strength']=v['clone_strength']   # clones: 1.0 (con 0, v4 suaviza la voz)
     body['seed']=int(hashlib.sha1(v['id'].encode()).hexdigest()[:8],16)%4294967295   # misma semilla en todos los beats: timbre y tono parejos
     if model!='eleven_v3':   # continuidad de entonación entre beats (v3 no lo admite)
         if prev: body['previous_text']=prev
@@ -67,8 +70,10 @@ def eleven(text,v,mp3,prev=None,nxt=None):
     d=json.loads(eleven_req(f"https://api.elevenlabs.io/v1/text-to-speech/{v['id']}/with-timestamps?output_format=mp3_44100_128",body))
     open(mp3,'wb').write(base64.b64decode(d['audio_base64']))
     al=d.get('alignment') or d['normalized_alignment'];ch,st,en=al['characters'],al['character_start_times_seconds'],al['character_end_times_seconds']
-    ws=[];cur=None
+    ws=[];cur=None;tag=False
     for c,a,b in zip(ch,st,en):
+        if c=='[': tag=True;continue   # etiquetas de v3/v4 ([excited]…): no se dicen, no van a tiempos ni subtítulos
+        if tag: tag=c!=']';continue
         if c.isspace():
             if cur: ws.append(cur);cur=None
             continue
@@ -137,7 +142,7 @@ def pace(v,W=None,change=False):
 
 # UNA SOLA VOZ POR VIDEO: la voz queda bloqueada en <work>/voice.lock.json la primera vez. Si después se pide otra
 # (otra voz, otro motor, otro modelo o ajustes), se frena: cambiarla exige regenerar TODA la locución (--cambiar-voz).
-VKEYS=('engine','id','model','rate','pitch','stability','similarity','style','speed','lang')
+VKEYS=('engine','id','model','rate','pitch','stability','similarity','style','speed','lang','clone_strength')
 def lock_check(W,v,change):
     f=os.path.join(W,'voice.lock.json');cur={k:v[k] for k in VKEYS if k in v}
     old=json.load(open(f)) if os.path.exists(f) else None
