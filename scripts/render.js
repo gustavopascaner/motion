@@ -214,7 +214,7 @@ async function full(WD){const t0=Date.now();const {tl}=build(WD);gate(tl,WD);con
   let done=0;console.log(`render: ${nf} cuadros (${tl.W}×${tl.H}, ${par} en paralelo)…`);const tick=setInterval(()=>VERBOSE&&process.stdout.write(`\r  ${done}/${nf} cuadros`),2000);
   await withPages(tl,par,async(pg,k)=>{const a=k*per,b=Math.min(nf,a+per);if(a>=b)return;
     const out=path.join(dir,`c${String(k).padStart(2,'0')}.mp4`);
-    const ff=spawn('ffmpeg',['-v','error','-y','-f','image2pipe','-framerate',String(tl.fps),'-c:v','mjpeg','-i','-','-c:v','libx264','-preset','medium','-crf','17','-pix_fmt','yuv420p','-r',String(tl.fps),out]);
+    const ff=spawn('ffmpeg',['-v','error','-y','-f','image2pipe','-framerate',String(tl.fps),'-c:v','mjpeg','-i','-','-c:v','libx264','-preset','medium','-crf','23','-pix_fmt','yuv420p','-r',String(tl.fps),out]);
     const end=new Promise(r=>ff.on('close',r));
     for(let f=a;f<b;f++){await pg.evaluate(t=>frame(t),f/tl.fps);const buf=await pg.screenshot({type:'jpeg',quality:93,optimizeForSpeed:true});
       if(!ff.stdin.write(buf))await new Promise(r=>ff.stdin.once('drain',r));done++;}
