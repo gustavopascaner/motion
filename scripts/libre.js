@@ -81,7 +81,7 @@ async function render(WD){const t0=Date.now(),P=prepare(WD),N=Math.ceil(P.total*
   const per=Math.ceil(N/K),dir=path.join(WD,'libre','chunks');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});
   const br=await browser();let list=[];
   try{await Promise.all(Array.from({length:K},async(_,k)=>{const a=k*per,b=Math.min(N,a+per);if(a>=b)return;const p=await page(br,P),out=path.join(dir,`c${String(k).padStart(2,'0')}.mp4`);
-    const ff=spawn('ffmpeg',['-y','-v','error','-f','image2pipe','-framerate',String(P.fps),'-c:v','mjpeg','-i','-','-c:v','libx264','-preset','medium','-crf','15','-pix_fmt','yuv420p','-r',String(P.fps),out],{stdio:['pipe','inherit','inherit']});
+    const ff=spawn('ffmpeg',['-y','-v','error','-f','image2pipe','-framerate',String(P.fps),'-c:v','mjpeg','-i','-','-c:v','libx264','-preset','medium','-crf','23','-pix_fmt','yuv420p','-r',String(P.fps),out],{stdio:['pipe','inherit','inherit']});
     for(let f=a;f<b;f++){const buf=await grab(p,f/P.fps);if(!ff.stdin.write(buf))await new Promise(r=>ff.stdin.once('drain',r));}
     ff.stdin.end();await new Promise(r=>ff.on('close',r));
     if(k===0)list=await p.evaluate(()=>SFX);}));}finally{await br.close();}
