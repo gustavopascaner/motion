@@ -17,4 +17,19 @@ La vista previa de Envato tiene marca de agua audible: siempre intentar entregar
 Si no hay navegador o el usuario no quiere: darle el link para que lo baje él y después `envato.py collect "<work>"`.
 
 ## Elegir la música según el tono
-Urgente o dato duro → enérgica, Upbeat 110–140 BPM · empático, salud, cuidado → cálida/inspiradora, Medium 90–110 · institucional o explicativo → corporativa tranquila · humor → juguetona. Preferir energía pareja (sin caídas largas); si la música es más corta que el video se repite sola. `offset` = segundo donde entra la parte con energía (mirar el perfil ▁▂▃█ de la búsqueda).
+Mapa tono → filtros de `envato.py search … music` (valores exactos que acepta hoy Envato; el script corrige mayúsculas y alias, y si un valor no existe avisa y busca sin ese filtro):
+
+| Tono del guion | `--mood` | `--tempo` | `--genre` (opcional) |
+|---|---|---|---|
+| Urgente, dato duro, alerta | `upbeat` | `"Upbeat (110-140 BPM)"` | `electronic` |
+| Empático, salud, cuidado | `inspiring` | `"Medium (90-110 BPM)"` | `ambient` / `cinematic` |
+| Institucional, explicativo | `inspiring` | `"Medium (90-110 BPM)"` | `corporate` |
+| Calmo, bienestar, reflexivo | `relaxing` | `"Slow (60-90 BPM)"` | `ambient` / `lofi` |
+| Positivo, celebración, logro | `happy` | `"Upbeat (110-140 BPM)"` | `pop` |
+| Humor, juguetón | `funny` | `"Upbeat (110-140 BPM)"` | `children` / `pop` |
+| Épico, lanzamiento, impacto | `epic` | `"Upbeat (110-140 BPM)"` | `cinematic` |
+| Serio, dramático, testimonio | `dramatic` | `"Slow (60-90 BPM)"` | `cinematic` |
+
+Valores válidos — mood: `happy sad inspiring dramatic dark upbeat chill funny angry relaxing romantic epic` · tempo: `Very Slow (Below 60 BPM)`, `Slow (60-90 BPM)`, `Medium (90-110 BPM)`, `Upbeat (110-140 BPM)`, `Fast (140-160 BPM)`, `Very Fast (160+ BPM)` (también sirve `--tempo medium` o `--tempo 100`). `calm` ya no existe: usar `relaxing`.
+
+Preferir energía pareja (sin caídas largas); si la música es más corta que el video se repite sola. `offset` = segundo donde entra la parte con energía (mirar el perfil ▁▂▃█ de la búsqueda).

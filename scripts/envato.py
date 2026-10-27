@@ -6,7 +6,9 @@ material, y después reemplaza cada vista previa por el original licenciado cuan
 
 uso:
   envato.py search <work> video "<términos en inglés>" [--n 8] [--vertical] [--sub Medical] [--min 5] [--max 30]
-  envato.py search <work> music "<términos>" [--n 6] [--mood inspiring] [--tempo "Medium (90-110 BPM)"] [--genre corporate]
+  envato.py search <work> music "<términos>" [--n 6] [--mood inspiring] [--tempo medium] [--genre corporate] [--theme …] [--instrument piano]
+        (mood/tempo/genre/theme/instrument se validan contra los valores de Envato: mayúsculas, alias como calm→relaxing,
+         tempo como "medium" o "100 bpm"; si un valor no existe o Envato lo rechaza, avisa y busca sin ese filtro)
         → <work>/envato/<kind>_<slug>.json + hoja de candidatos <work>/envato/<kind>_<slug>.jpg (videos) / perfil de energía (música)
   envato.py use <work> <clave> <búsqueda>#<n>     (ej. kl video_doctor-talking#3) → registra en config.json (broll[clave] o music)
   envato.py collect <work> [--from ~/Downloads] [--file <clave> <archivo>]  → reemplaza vistas previas por originales licenciados
@@ -22,13 +24,47 @@ MCP=os.environ.get('ENVATO_MCP_URL','https://mcp.envato.com/mcp');UA={'User-Agen
 slug=lambda s:re.sub(r'[^a-z0-9]+','-',s.lower()).strip('-')[:40]
 norm=lambda s:re.sub(r'[^a-z0-9]','',s.lower())
 
-def mcp(tool,args):
-    body=json.dumps({'jsonrpc':'2.0','id':1,'method':'tools/call','params':{'name':tool,'arguments':args}}).encode()
+def rpc(method,params):
+    body=json.dumps({'jsonrpc':'2.0','id':1,'method':method,'params':params}).encode()
     req=urllib.request.Request(MCP,body,{**UA,'Content-Type':'application/json','Accept':'application/json, text/event-stream'})
     raw=urllib.request.urlopen(req,timeout=40).read().decode()
     data=json.loads(next(l[6:] for l in raw.splitlines() if l.startswith('data: ')) if 'data: ' in raw else raw)
     if 'error' in data: raise SystemExit(f"Envato MCP: {data['error']}")
-    return json.loads(data['result']['content'][0]['text'])
+    return data['result']
+def mcp(tool,args):
+    """Llama una herramienta del MCP. Si Envato rechaza algún filtro (valores que cambiaron), lo avisa y reintenta sin él."""
+    while True:
+        txt=rpc('tools/call',{'name':tool,'arguments':args})['content'][0]['text']
+        try: return json.loads(txt)
+        except ValueError: pass
+        bad=[k for k in re.findall(r'^filters\.(\w+)',txt,re.M) if k in args.get('filters',{})]
+        if not bad: raise SystemExit('Envato rechazó la búsqueda:\n'+re.sub(r'\n\s*For further information.*','',txt))
+        for k in bad:
+            ok=re.search(rf'^filters\.{k}\n\s*Input should be (.+?) \[',txt,re.M)
+            print(f"⚠️ Envato rechazó --{k} {args['filters'].pop(k)!r}; sigo sin ese filtro."+(f' Valores válidos: {ok.group(1)}' if ok else ''))
+
+# Valores que acepta hoy search_music (se leen del esquema del MCP; esto es solo el respaldo si no responde)
+ENUMS={'mood':['happy','sad','inspiring','dramatic','dark','upbeat','chill','funny','angry','relaxing','romantic','epic'],
+       'tempo':['Very Slow (Below 60 BPM)','Slow (60-90 BPM)','Medium (90-110 BPM)','Upbeat (110-140 BPM)','Fast (140-160 BPM)','Very Fast (160+ BPM)']}
+ALIAS={'mood':{'calm':'relaxing','calma':'relaxing','tranquilo':'relaxing','peaceful':'relaxing','soft':'relaxing','warm':'inspiring','hopeful':'inspiring','uplifting':'inspiring','motivational':'inspiring','emotional':'dramatic','energetic':'upbeat','energico':'upbeat','enérgico':'upbeat','positive':'happy','alegre':'happy','playful':'funny','humor':'funny','juguetón':'funny','jugueton':'funny','lofi':'chill','tense':'dark','suspense':'dark','powerful':'epic'},
+       'tempo':{'veryslow':'Very Slow (Below 60 BPM)','slow':'Slow (60-90 BPM)','medium':'Medium (90-110 BPM)','upbeat':'Upbeat (110-140 BPM)','fast':'Fast (140-160 BPM)','veryfast':'Very Fast (160+ BPM)'}}
+def schema_enums(tool):
+    try:
+        t=next(t for t in rpc('tools/list',{})['tools'] if t['name']==tool)
+        props=t['inputSchema']['properties']['filters']['anyOf'][0]['properties']
+        return {k:next(a['enum'] for a in v.get('anyOf',[v]) if 'enum' in a) for k,v in props.items() if any('enum' in a for a in v.get('anyOf',[v]))}
+    except Exception: return {}
+def fix_filter(k,v,enums):
+    """Normaliza un valor de filtro a uno que Envato acepte (mayúsculas, alias, BPM); None si no hay equivalente."""
+    vals=enums.get(k) or ENUMS.get(k)
+    if not vals: return v
+    by={norm(x):x for x in vals};n=norm(v)
+    if n in by: return by[n]
+    if norm(v.split('(')[0]) in ALIAS.get(k,{}): return ALIAS[k][norm(v.split('(')[0])]
+    if v.lower().strip() in ALIAS.get(k,{}): return ALIAS[k][v.lower().strip()]
+    if k=='tempo' and (m:=re.search(r'\d+',v)):   # "100", "100 bpm", "90-110" → rango que lo contiene
+        b=int(m.group());return vals[0 if b<60 else 1 if b<90 else 2 if b<110 else 3 if b<140 else 4 if b<160 else 5] if len(vals)==6 else None
+    return None
 def get(url,dst=None):
     r=urllib.request.urlopen(urllib.request.Request(url,headers=UA),timeout=60).read()
     if dst: open(dst,'wb').write(r)
@@ -66,8 +102,14 @@ def search(W,kind,terms,o):
         res=mcp('search_stock_video',{'searchTerms':terms[:60],'perPage':n,'sortBy':'relevance','languageCode':'en','filters':f})
     else:
         f={'categories':'Music Tracks','vocals_in_audio':'No Vocals'}
-        for k in('mood','tempo','genre','theme'):
-            if k in o: f[k]=o[k]
+        enums=schema_enums('search_music') if any(k in o for k in('mood','tempo','genre','theme','instrument')) else {}
+        for k in('mood','tempo','genre','theme','instrument'):
+            if k not in o: continue
+            v=fix_filter(k,o[k],enums)
+            if v is None: print(f"⚠️ --{k} {o[k]!r} no es un valor de Envato; sigo sin ese filtro. Válidos: {', '.join(enums.get(k) or ENUMS.get(k,[]))}")
+            else:
+                if v!=o[k]: print(f'--{k} {o[k]!r} → {v!r}')
+                f[k]=v
         res=mcp('search_music',{'searchTerms':terms[:60],'perPage':n,'sortBy':'relevance','languageCode':'en','filters':f})
     items=res['items'][:n]
     def fetch(i_it):
