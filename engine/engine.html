@@ -626,7 +626,7 @@ async function init(cfg){CFG=cfg;BR=cfg.brand;W=cfg.W;H=cfg.H;TOTAL=cfg.total;U=
   sc.upd=SC[d.type](d.p,{box:sc.box,inner,root,D:sc.D,words:d.words||[],th,area,port:area.port,i,type:d.type,al});
   nohy(sc.box);root.style.display='block';sc.upd(sc.D);fit(sc);root.style.display='none';SCN.push(sc);}
  capEl=h('div','',S);capEl.id='caps';const cs=BR.captions||{};capEl.className='body';
- capEl.style.cssText+=`font-size:${(cs.size||64)*U}px;font-weight:800;line-height:1.1;text-transform:${cs.upper?'uppercase':'none'};padding:0 ${W*.08}px`;
+ CAPFS=(cs.size||64)*U;capEl.style.cssText+=`font-size:${CAPFS}px;font-weight:800;line-height:1.1;text-transform:${cs.upper?'uppercase':'none'};padding:0 ${(W-W*.84/1.06)/2}px`;
  if(BR.logoURL&&cfg.logoCorner!==false){logoEl=h('img','',S);logoEl.id='logo';logoEl.src=BR.logoURL;const lh=Math.round((BR.logoHeight||64)*U);
   logoEl.style.cssText+=`height:${lh}px;max-width:${W*.3}px;top:${Math.round(H*.045)}px;${(BR.logoPos||'left')==='right'?'right':'left'}:${Math.round(W*.08)}px`;await logoEl.decode().catch(()=>{});}
  if((BR.style||{}).progress){progEl=h('div','',S);progEl.id='prog';progEl.style.height=Math.max(4,Math.round(8*U))+'px';}
@@ -652,7 +652,12 @@ function camSet(sc,t){const cq=E.io(P(t,0,Math.max(sc.D,1))),cm=LOOK.cam||'zoom'
  let cs=cm==='none'?1:cm==='pull'?L(1.05,1,cq):cm==='drift'?1.015:cm==='tilt'||cm==='orbit'?1.03:1+.035*cq;if(PUNCH)cs*=punchK(sc,t);
  sc.cam.style.scale=String(cs);if(cm==='drift'&&!sc.cam.style.translate)sc.cam.style.translate=`0 ${L(0,-36,cq)}px`;
  if(DEPTH||cm==='tilt'||cm==='orbit')sc.cam.style.transform=cam3d(sc,t,cq,cm);}
-let curCap=-1;
+let curCap=-1,CAPFS=64;
+// subtítulo que no entra: achica la letra hasta que ninguna palabra pase el ancho y el grupo ocupe ≤ 2 líneas
+// (el ancho útil ya descuenta el 106% de la palabra activa)
+function capFit(){const iw=W*.84/1.06;let fs=CAPFS;
+ for(let n=0;n<40;n++){capEl.style.fontSize=fs+'px';const lines=Math.round(capEl.offsetHeight/(fs*1.1));
+  if([...capEl.children].every(s=>s.offsetWidth<=iw+1)&&(lines<=2||fs<=CAPFS*.7))return;fs*=.94;}}
 // opt: sin nada = cuadro completo (MP4) · {layer:'scenes'} = solo escenas (opaco) · {layer:'caps'} = solo subtítulos · {layer:'overlay'} = logo/progreso
 // caps y overlay salen con fondo transparente (capas con alfa para Premiere).
 function frame(T,opt){FRAME=Math.round(T*(CFG.fps||30));MBN=0;opt=opt||{};const lay=opt.layer,alpha=lay==='caps'||lay==='overlay';
@@ -668,8 +673,8 @@ function frame(T,opt){FRAME=Math.round(T*(CFG.fps||30));MBN=0;opt=opt||{};const 
  // subtítulos: ocultos si la escena de arriba los tiene desactivados
  const capsOn=!lay||opt.layer==='caps';
  const show=capsOn&&top&&top.cap&&(T-top.s)>(TRD[top.tr]||0)*.6;const k=show?CAPS.findIndex(g=>T>=g.s&&T<g.e):-1;
- if(k!==curCap){curCap=k;capEl.innerHTML='';if(k>=0)CAPS[k].words.forEach((w,i)=>{if(i)capEl.appendChild(document.createTextNode(' '));h('span','',capEl,w.w);});}
- if(k>=0){const g=CAPS[k],th=top.th;applyTheme(capEl,th);capEl.style.top=(top.area.capY-capEl.offsetHeight/2)+'px';
+ if(k!==curCap){curCap=k;capEl.innerHTML='';if(k>=0)CAPS[k].words.forEach((w,i)=>{if(i)capEl.appendChild(document.createTextNode(' '));h('span','',capEl,w.w);});if(k>=0)capFit();}
+ if(k>=0){const g=CAPS[k],th=top.th,ch=capEl.offsetHeight;applyTheme(capEl,th);capEl.style.top=Math.max(0,Math.min(top.area.capY-ch/2,H*.95-ch))+'px';
   const x=E.back(P(T,g.s,.18));capEl.style.transform=`scale(${L(.88,1,x)})`;capEl.style.opacity=P(T,g.s,.06);
   [...capEl.children].forEach((sp,i)=>{const w=g.words[i],on=T>=w.s&&T<(g.words[i+1]?g.words[i+1].s:g.e);
    const cs_=LOOK.captions||'color';

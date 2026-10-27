@@ -94,15 +94,21 @@ function drawTrans(T,i,s,e){SECTS[i-1].draw(T);
 const CAP=Object.assign({on:true,size:62,upper:false},BR.captions||{},DATA.cfg.captions===false?{on:false}:{});
 const CAPY=FH*(FH>FW?.871:.9);
 const CHUNKS=(()=>{const ws=WORDS.map(w=>({...w,t:w.d!=null?w.d:w.w})).filter(w=>w.t!=='');const out=[];let cur=[];
-  ws.forEach((w,i)=>{const pv=ws[i-1];if(cur.length&&(cur.length>=3||w.beat!==pv.beat||w.s-pv.e>.3)){out.push(cur);cur=[];}cur.push(w);});if(cur.length)out.push(cur);
+  ws.forEach((w,i)=>{const pv=ws[i-1];if(cur.length&&(cur.length>=3||w.beat!==pv.beat||w.s-pv.e>.3||w.t.length>12||cur.some(y=>y.t.length>12))){out.push(cur);cur=[];}cur.push(w);});if(cur.length)out.push(cur);
   return out.map((c,k)=>({ws:c,s:c[0].s-.04,e:Math.min(c[c.length-1].e+.4,out[k+1]?out[k+1][0].s-.04:1e9)}));})();
 function toneAt(T){return typeof TONE==='function'?TONE(T):SECTS.length?SECTS[secAt(T)].tone:'light';}
 function captions(T){if(!CAP.on)return;const c=CHUNKS.find(c=>T>=c.s&&T<c.e);if(!c)return;const tn=toneAt(T),onDark=tn==='dark'||tn==='accent';
   const base=onDark?COL.light:COL.dark,act=tn==='accent'?COL.accent2:tn==='dark'?COL.accent2:COL.accent;
   const ws=c.ws.map(w=>{let s=w.t.replace(/[.,:;]+$/,'');return CAP.upper?s.toUpperCase():s;}),size=(CAP.size||62)*U;
-  X.save();setF('bold',size);const sp=X.measureText(' ').width,wd=ws.map(s=>X.measureText(s).width),tot=wd.reduce((a,b)=>a+b,0)+sp*(ws.length-1);
-  const p=eo(P(T,c.s,.18));let x=FW/2-tot/2;X.translate(0,(1-p)*14*U);
-  ws.forEach((s,i)=>{const on=T>=c.ws[i].s,cur=on&&(i===ws.length-1||T<c.ws[i+1].s);X.fillStyle=cur?act:base;X.globalAlpha=p*(on?1:.55);X.fillText(s,x,CAPY);x+=wd[i]+sp;});X.restore();}
+  X.save();setF('bold',size);const sp=X.measureText(' ').width,wd=ws.map(s=>X.measureText(s).width);
+  // si no entra en el 84% del ancho: achica hasta el 75%; si igual no entra, dos líneas parejas (y achica lo que haga falta)
+  const lw=(a,b)=>wd.slice(a,b).reduce((x,y)=>x+y,0)+sp*(b-a-1),fit=FW*.84,tot=lw(0,ws.length);let cut=ws.length,k=Math.min(1,fit/tot);
+  if(k<.75&&ws.length>1){cut=1;for(let i=2;i<ws.length;i++)if(Math.max(lw(0,i),lw(i,ws.length))<Math.max(lw(0,cut),lw(cut,ws.length)))cut=i;
+   k=Math.min(1,fit/Math.max(lw(0,cut),lw(cut,ws.length)));}
+  if(k<1)setF('bold',size*k);const lines=cut<ws.length?[[0,cut],[cut,ws.length]]:[[0,ws.length]];
+  const p=eo(P(T,c.s,.18));X.translate(0,(1-p)*14*U);
+  lines.forEach(([a,b],j)=>{let x=FW/2-lw(a,b)*k/2;const y=CAPY-(lines.length-1-j)*size*k*1.1;
+   for(let i=a;i<b;i++){const on=T>=c.ws[i].s,cur=on&&(i===ws.length-1||T<c.ws[i+1].s);X.fillStyle=cur?act:base;X.globalAlpha=p*(on?1:.55);X.fillText(ws[i],x,y);x+=(wd[i]+sp)*k;}});X.restore();}
 
 // ---------- grano de papel ----------
 const NZ=document.createElement('canvas');NZ.width=NZ.height=256;{const g=NZ.getContext('2d'),im=g.createImageData(256,256),r=rnd(7);

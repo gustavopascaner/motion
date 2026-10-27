@@ -75,10 +75,10 @@ function build(WD){
     if(x.type==='image'){const src=path.isAbsolute(p.src)?p.src:path.join(WD,p.src);if(!fs.existsSync(src))throw new Error('no existe la imagen '+src);p.url=fileURL(src);}
     const res=v=>v&&v.__w?+(findW(v,x.s,x.e+.3)-x.s).toFixed(3):Array.isArray(v)?v.map(res):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,y])=>[k,res(y)])):v;
     x.p=res(p);x.words=shown.filter(y=>y.s>=x.s-.05&&y.s<x.e).map(y=>({w:y.w,s:+(y.s-x.s).toFixed(3),e:+(y.e-x.s).toFixed(3)}));});
-  // subtítulos: grupos de hasta 3 palabras (o ~18 caracteres); cortan en pausas y cambios de beat
+  // subtítulos: grupos de hasta 3 palabras (o ~18 caracteres); cortan en pausas y cambios de beat; las palabras largas (>12) van solas
   const KW=new Set((cfg.keywords||[]).map(norm));const caps=[];let g=null;
   shown.forEach((x,i)=>{const pv=shown[i-1];
-    if(!g||g.words.length>=3||g.words.map(y=>y.w).join(' ').length+x.w.length>18||x.s-pv.e>.35||x.beat!==pv.beat){if(g)caps.push(g);g={s:x.s,words:[]};}
+    if(!g||g.words.length>=3||g.words.map(y=>y.w).join(' ').length+x.w.length>18||x.w.length>12||g.words.some(y=>y.w.length>12)||x.s-pv.e>.35||x.beat!==pv.beat){if(g)caps.push(g);g={s:x.s,words:[]};}
     g.words.push({w:x.w,s:x.s,e:x.e,k:KW.has(norm(x.w))});});if(g)caps.push(g);
   caps.forEach((c,i)=>{c.e=+Math.min(caps[i+1]?caps[i+1].s:total,c.words[c.words.length-1].e+.45).toFixed(3);});
   const capsOn=cfg.captions??(brand.captions||{}).on??true;
