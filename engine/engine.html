@@ -141,7 +141,7 @@ function hex2rgb(x){x=x.replace('#','');if(x.length===3)x=[...x].map(c=>c+c).joi
 function lum(x){return hex2rgb(x).map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)}).reduce((a,v,i)=>a+v*[.2126,.7152,.0722][i],0)}
 function con(a,b){const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
 function theme(key){const c=BR.colors,bg=c[key]||key;const fg=con(bg,c.dark)>=con(bg,c.light)?c.dark:c.light;
- const cand=(LOOK.hlPrefer==='accent2'?[c.accent2,c.accent,fg]:[c.accent,c.accent2,fg]).filter(x=>x&&x.toLowerCase()!==bg.toLowerCase());
+ const cand=(LOOK.hlPrefer==='accent2'?[c.accent2,c.accent,c.accent3,fg]:[c.accent,c.accent2,c.accent3,fg]).filter(x=>x&&x.toLowerCase()!==bg.toLowerCase());
  const hl=cand.find(x=>con(bg,x)>=2.2)||fg, hl2=cand.find(x=>x!==hl&&con(bg,x)>=2.2)||fg;
  const hlfg=con(hl,c.dark)>=con(hl,c.light)?c.dark:c.light;
  return {bg,fg,hl,hl2,hlfg,hl2fg:con(hl2,c.dark)>=con(hl2,c.light)?c.dark:c.light,dark:lum(bg)<.25};}
@@ -154,7 +154,7 @@ function applyBrand(){const f=BR.fonts,css=[],R=document.documentElement.style;
  const d=f.display||{};R.setProperty('--dw',d.weight||800);R.setProperty('--ds',d.stretch||'100%');R.setProperty('--dt',d.tracking||'-0.02em');
  R.setProperty('--dl',d.leading||.92);R.setProperty('--du',d.upper===false?'none':'uppercase');R.setProperty('--bw',(f.body||{}).weight||700);
  R.setProperty('--ai','normal');R.setProperty('--r',(LOOK.radius??(BR.style||{}).radius??36)+'px');
- for(const k of['dark','light','accent','accent2','mute'])if(BR.colors[k])R.setProperty('--'+k,BR.colors[k]);}
+ for(const k of['dark','light','accent','accent2','accent3','mute'])if(BR.colors[k])R.setProperty('--'+k,BR.colors[k]);}
 
 // ───────── layout ─────────
 function layout(capOn){const port=H/W>1.3,x=Math.round(W*.08),top=Math.round(H*(port?.13:.11));

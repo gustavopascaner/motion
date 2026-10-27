@@ -2,8 +2,9 @@
 const fs=require('fs'),path=require('path'),os=require('os'),crypto=require('crypto');
 
 // rotación de fondos según look.palette
-exports.PAL={classic:['light','accent','light','dark','light'],dark:['dark','light','accent','light','dark','light'],light:['light','accent','light','light','dark','light'],
-  blocks:['light','accent','light','dark','accent'],duo:['light','dark','light','light'],accent2:['light','accent2','light','accent','light','dark']};
+exports.PAL={classic:['light','accent','light','dark','light','accent3'],dark:['dark','light','accent','light','dark','light','accent3'],light:['light','accent','light','light','dark','light','accent3'],
+  blocks:['light','accent','light','dark','accent','light','accent3'],duo:['light','dark','light','light'],accent2:['light','accent2','light','accent','light','dark','accent3']};
+// accent3 (opcional, tercer color de marca): va al final de cada rotación, así las marcas sin accent3 quedan exactamente igual
 // fondos: predominan los claros y el oscuro entra de vez en cuando (≈ 1 de cada 4-5); render.js evita repetir el mismo fondo en escenas seguidas
 // variantes de layout por escena (la primera es el diseño clásico); tienen que coincidir con engine/engine.html
 exports.VARIANTS={title:['stack','offset','framed','mask'],kinetic:['rise','pop','light','slam','track','stackup'],bigword:['letters','outline','echo','slam'],stat:['bar','giant','ring','split'],
