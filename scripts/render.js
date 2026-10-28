@@ -188,7 +188,7 @@ function gate(tl,WD){if(process.argv.includes('--force'))return;const {err}=revi
 
 // Un Chrome por página: las páginas de un mismo Chrome comparten el proceso de GPU y las capturas se hacen de a una.
 async function withPages(tl,n,fn){if(!CHROME)throw new Error('No encuentro Chrome. Instalalo o definí CHROME=/ruta');
-  const launch=()=>puppeteer.launch({executablePath:CHROME,headless:true,protocolTimeout:0,args:['--allow-file-access-from-files','--force-device-scale-factor=1','--hide-scrollbars','--disable-web-security']});
+  const launch=()=>puppeteer.launch({executablePath:CHROME,headless:true,protocolTimeout:180000,args:['--allow-file-access-from-files','--force-device-scale-factor=1','--hide-scrollbars','--disable-web-security']});
   const brs=await Promise.all(Array.from({length:n},launch));
   try{return await Promise.all(brs.map(async(br,k)=>{const pg=await br.newPage();await pg.setViewport({width:tl.W,height:tl.H,deviceScaleFactor:1});
     pg.on('console',m=>{if(m.type()==='warning'||m.type()==='error')console.warn('  [engine]',m.text());});
@@ -211,9 +211,14 @@ async function check(WD){const t0=Date.now();const {err}=plan(WD,true);
   await test(WD,arg('at')||'0.06,0.18,0.35,mid,end');
   console.log(`✓ check en ${((Date.now()-t0)/1000).toFixed(0)} s${err.length?` · ${err.length} error(es) de Dirección (✗) a corregir antes del render final`:''}`);if(err.length)process.exitCode=1;}
 
-async function full(WD){const t0=Date.now();const {tl}=build(WD);gate(tl,WD);const par=+(arg('par')||Math.min(8,Math.max(2,os.cpus().length-2)));
+// Workers en paralelo: cada uno (Chrome + ffmpeg) usa ~1,5 GB en 9:16; se dejan 4 GB para el sistema. --par o MOTION_PAR lo fijan a mano.
+let TICK;
+function autoPar(){const gb=os.totalmem()/2**30;return Math.max(1,Math.min(8,os.cpus().length-2,Math.floor((gb-4)/1.5)));}
+async function full(WD){const par=+(arg('par')||process.env.MOTION_PAR||autoPar());
+  try{await renderAll(WD,par);}catch(e){if(par<=1||e.message.startsWith('Dirección'))throw e;clearInterval(TICK);console.warn(`⚠️ el render con ${par} workers falló (${e.message.split('\n')[0]}); reintento con 1`);await renderAll(WD,1);}}
+async function renderAll(WD,par){const t0=Date.now();const {tl}=build(WD);gate(tl,WD);
   const nf=Math.ceil(tl.total*tl.fps),per=Math.ceil(nf/par),dir=path.join(WD,'chunks');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});
-  let done=0;console.log(`render: ${nf} cuadros (${tl.W}×${tl.H}, ${par} en paralelo)…`);const tick=setInterval(()=>VERBOSE&&process.stdout.write(`\r  ${done}/${nf} cuadros`),2000);
+  let done=0;console.log(`render: ${nf} cuadros (${tl.W}×${tl.H}, ${par} en paralelo)…`);const tick=TICK=setInterval(()=>VERBOSE&&process.stdout.write(`\r  ${done}/${nf} cuadros`),2000);
   await withPages(tl,par,async(pg,k)=>{const a=k*per,b=Math.min(nf,a+per);if(a>=b)return;
     const out=path.join(dir,`c${String(k).padStart(2,'0')}.mp4`);
     const ff=spawn('ffmpeg',['-v','error','-y','-f','image2pipe','-framerate',String(tl.fps),'-c:v','mjpeg','-i','-','-c:v','libx264','-preset','medium','-crf','23','-pix_fmt','yuv420p','-r',String(tl.fps),out]);
