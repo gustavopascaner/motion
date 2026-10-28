@@ -186,13 +186,15 @@ function plan(WD,compact){const {tl,sfx,vo}=build(WD);
 // el render final se frena si hay errores de dirección (concept reciclado o faltante); --force lo saltea
 function gate(tl,WD){if(process.argv.includes('--force'))return;const {err}=review(tl,null,WD);if(err.length)throw new Error('Dirección:\n'+err.map(x=>'  ✗ '+x).join('\n')+'\n(corregir, o --force)');}
 
+// Un Chrome por página: las páginas de un mismo Chrome comparten el proceso de GPU y las capturas se hacen de a una.
 async function withPages(tl,n,fn){if(!CHROME)throw new Error('No encuentro Chrome. Instalalo o definí CHROME=/ruta');
-  const br=await puppeteer.launch({executablePath:CHROME,headless:true,protocolTimeout:0,args:['--allow-file-access-from-files','--force-device-scale-factor=1','--hide-scrollbars','--disable-web-security']});
-  try{return await Promise.all(Array.from({length:n},async(_,k)=>{const pg=await br.newPage();await pg.setViewport({width:tl.W,height:tl.H,deviceScaleFactor:1});
+  const launch=()=>puppeteer.launch({executablePath:CHROME,headless:true,protocolTimeout:0,args:['--allow-file-access-from-files','--force-device-scale-factor=1','--hide-scrollbars','--disable-web-security']});
+  const brs=await Promise.all(Array.from({length:n},launch));
+  try{return await Promise.all(brs.map(async(br,k)=>{const pg=await br.newPage();await pg.setViewport({width:tl.W,height:tl.H,deviceScaleFactor:1});
     pg.on('console',m=>{if(m.type()==='warning'||m.type()==='error')console.warn('  [engine]',m.text());});
     pg.on('pageerror',e=>console.warn('  [engine] error:',e.message));
     await pg.goto(fileURL(path.join(ENG,'engine.html')));if(tl.custom)await pg.addScriptTag({path:tl.custom});const fits=await pg.evaluate(c=>init(c),tl);const r=await fn(pg,k,fits);await pg.close();return r;}));}
-  finally{await br.close();}}
+  finally{await Promise.all(brs.map(b=>b.close()));}}
 
 async function test(WD,atOpt){const {tl}=build(WD);const dir=path.join(WD,'test');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});
   const at=atOpt||arg('at')||'end';
@@ -209,7 +211,7 @@ async function check(WD){const t0=Date.now();const {err}=plan(WD,true);
   await test(WD,arg('at')||'0.06,0.18,0.35,mid,end');
   console.log(`✓ check en ${((Date.now()-t0)/1000).toFixed(0)} s${err.length?` · ${err.length} error(es) de Dirección (✗) a corregir antes del render final`:''}`);if(err.length)process.exitCode=1;}
 
-async function full(WD){const t0=Date.now();const {tl}=build(WD);gate(tl,WD);const par=+(arg('par')||Math.min(6,Math.max(2,os.cpus().length-2)));
+async function full(WD){const t0=Date.now();const {tl}=build(WD);gate(tl,WD);const par=+(arg('par')||Math.min(8,Math.max(2,os.cpus().length-2)));
   const nf=Math.ceil(tl.total*tl.fps),per=Math.ceil(nf/par),dir=path.join(WD,'chunks');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});
   let done=0;console.log(`render: ${nf} cuadros (${tl.W}×${tl.H}, ${par} en paralelo)…`);const tick=setInterval(()=>VERBOSE&&process.stdout.write(`\r  ${done}/${nf} cuadros`),2000);
   await withPages(tl,par,async(pg,k)=>{const a=k*per,b=Math.min(nf,a+per);if(a>=b)return;
@@ -257,4 +259,4 @@ async function brandPreview(slug,out,fmt){const [W,H]=FORMATS[fmt||'9:16'];const
 (async()=>{const bp=arg('brand-preview');if(bp)return brandPreview(bp,arg('out')||path.join(process.cwd(),`marca_${path.basename(bp)}.jpg`),arg('format'));
   const WD=path.resolve(process.argv[2]);
   if(process.argv.includes('--look-preview'))return lookPreview(WD);
-  if(process.argv.includes('--check'))await check(WD);else if(process.argv.includes('--plan'))plan(WD);else if(process.argv.includes('--test'))await test(WD);else await full(WD);})().catch(e=>{console.error('✗',e.message);process.exit(1);});
+  if(process.argv.includes('--check'))await check(WD);else if(process.argv.includes('--plan'))plan(WD);else if(process.argv.includes('--test'))await test(WD);else await full(WD);})().then(()=>setTimeout(()=>process.exit(),1000).unref()).catch(e=>{console.error('✗',e.message);process.exit(1);});
