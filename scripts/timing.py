@@ -65,6 +65,10 @@ def report(W):
         ev=[(a,'⏸ Esperando: '+n,b-a) if k=='espera' else (a,'🧠 '+n,max(0,(b-a)-ov(a,b))) for k,n,a,b in segs]+[(a,'⚙️ '+n,b-a) for a,b,n in tools]
         lines+=['','### Cronología','','| Desde el inicio | Qué | Duración |','|---|---|---|']
         lines+=[f'| {clock(a-st)} | {n} | {fmt(s)} |' for a,n,s in sorted(ev)]
+    # Corrida completa (con Guion y beats) sin alguna etapa obligatoria: avisarlo, porque su tiempo se suma a la etapa anterior.
+    req=['Guion y beats','Música','Historial y tratamiento' if modo=='libre' else 'Tratamiento y look','Storyboard y anim.js' if modo=='libre' else 'Storyboard','Chequeo','Revisión de director','Cierre y LEEME']
+    falta=[n for n in req if n not in fases] if 'Guion y beats' in fases else []
+    if falta: lines+=['',f'⚠️ Sin marcar: {", ".join(falta)} (su tiempo quedó sumado a la etapa anterior)']
     txt='\n'.join(lines);open(os.path.join(W,'timing.md'),'w',encoding='utf-8').write(txt+'\n');print(txt)
 if __name__=='__main__':
     cmd,W=sys.argv[1],sys.argv[2]

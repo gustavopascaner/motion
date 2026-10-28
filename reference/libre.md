@@ -13,13 +13,13 @@ En vez de armar el video con placas del catálogo, se programa **un mundo ilustr
 Marca (`IDENTIDAD.md`/`notes`, solo sus colores y 3 tipografías), voz y `words.json`, música de Envato licenciada, `beats.json`, subtítulos (los dibuja el kit), fondos **claros predominan** (oscuro solo un momento), gancho en los primeros 2 s, cierre sincronizado con el pedido del guion, **nunca @usuario** inventado, SFX suaves sin 'boom' (máx. `sfx_max`), QC, LEEME y cronómetro.
 
 ## Pasos (reemplazan 3b–5 del modo placas)
-1. **Historial**: `node $SK/scripts/libre.js history <marca>` → no repetir mundo, protagonista ni metáforas de los últimos videos de la marca.
+1. **Historial** (`$PY $SK/scripts/timing.py fase "<work>" "Historial y tratamiento"`): `node $SK/scripts/libre.js history <marca>` → no repetir mundo, protagonista ni metáforas de los últimos videos de la marca.
 2. **Tratamiento** (`<work>/tratamiento.json`): `{"idea":"…","mundo":"…","protagonista":"…","metaforas":["…"]}`. Antes, 3 ideas madre de una línea y elegir la más audaz que se entienda.
-3. **Storyboard visual** (`<work>/storyboard.md`): una línea por beat → **qué se VE** (acción del protagonista, lugar, cámara), el texto en pantalla (si hay) y la transición. Agrupar beats en **5–8 secciones** de 4–12 s.
+3. **Storyboard visual** (`$PY $SK/scripts/timing.py fase "<work>" "Storyboard y anim.js"`; abarca también los pasos 4–5) (`<work>/storyboard.md`): una línea por beat → **qué se VE** (acción del protagonista, lugar, cámara), el texto en pantalla (si hay) y la transición. Agrupar beats en **5–8 secciones** de 4–12 s.
 4. `node $SK/scripts/libre.js init "<work>"` → `anim.js` (plantilla), `libre/` (kit, datos, tipografías).
 5. **Programar `anim.js`**: primero los personajes/objetos como funciones con parámetros de pose y estado (`gato(x,y,escala,{t,pose,parpadeo,mirada})`), después una función por sección y `SEC(inicio, draw, {tr, bg, tone})`. Tiempos siempre con `W('palabra')`. SFX con `sfx()`.
-6. `node $SK/scripts/libre.js stills "<work>"` → recorre todo el video (errores y textos fuera de cuadro) y arma `sheet.jpg` con un cuadro por beat + uno a mitad de cada transición, con lo que se dice en cada uno. **Mirada 1**: ¿cada cuadro cuenta lo que dice la voz? ¿se lee? ¿se choca con los subtítulos? ¿fondo claro predominante? Corregir.
-7. **Revisión de director** (una ronda): puntuar cada sección 1–5 en *idea*, *vida* y *continuidad* en `<work>/direccion.md`; rehacer las 2 peores. `stills` otra vez: **Mirada 2** (máximo 2 miradas; para ver un momento: `--at=12.4,13.1`).
+6. `$PY $SK/scripts/timing.py fase "<work>" "Chequeo" && node $SK/scripts/libre.js stills "<work>"` → recorre todo el video (errores y textos fuera de cuadro) y arma `sheet.jpg` con un cuadro por beat + uno a mitad de cada transición, con lo que se dice en cada uno. **Mirada 1**: ¿cada cuadro cuenta lo que dice la voz? ¿se lee? ¿se choca con los subtítulos? ¿fondo claro predominante? Corregir.
+7. **Revisión de director** (una ronda; `$PY $SK/scripts/timing.py fase "<work>" "Revisión de director"`, los `stills` de la Mirada 2 quedan dentro): puntuar cada sección 1–5 en *idea*, *vida* y *continuidad* en `<work>/direccion.md`; rehacer las 2 peores. `stills` otra vez: **Mirada 2** (máximo 2 miradas; para ver un momento: `--at=12.4,13.1`).
 8. Cierre igual que siempre: `bash $SK/scripts/finish.sh "<work>"` (con `"modo":"libre"` en config.json renderiza con `libre.js render`, en paralelo, ~20 s por minuto) + LEEME.
 
 ## API del kit (`libre/kit.js`, globales)
