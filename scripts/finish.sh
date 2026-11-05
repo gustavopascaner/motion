@@ -19,4 +19,5 @@ else                         step look; node "$SK/scripts/look.js" log "$W" >> "
 step timing;   "$PY" -I "$SK/scripts/timing.py" report "$W" > "$W/timing.out" 2>> "$LOG"
 echo "MP4: $OUT/$NAME.mp4"
 "$PY" -I "$SK/scripts/qc.py" "$W"
+step reporte;  "$PY" -I "$SK/scripts/reporte.py" "$W" motion >> "$LOG" 2>&1 || true
 head -n 1 "$W/timing.out"

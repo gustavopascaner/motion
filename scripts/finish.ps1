@@ -14,3 +14,4 @@ if ($libre) { Run "historial" { node "$SK\scripts\libre.js" log $W } } else { Ru
 Run "timing" { & $PY -I "$SK\scripts\timing.py" report $W }
 Write-Host "MP4: $($cfg.out_dir)\$($cfg.name).mp4"
 & $PY -I "$SK\scripts\qc.py" $W
+try { & $PY -I "$SK\scripts\reporte.py" $W motion *>> $LOG } catch { }

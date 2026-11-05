@@ -63,3 +63,9 @@ La clave se crea en elevenlabs.io → Developers → API Keys, con los permisos 
 | `scripts/selftest.sh` | Prueba rápida sin red: plan, hoja de prueba, subtítulos y variantes del motor |
 
 Tipografías de `brands/editorial/fonts` y las que baja `brand.py`: Google Fonts (SIL Open Font License). La música de Envato se **licencia y descarga automáticamente, sin preguntar**, desde tu sesión de Envato en tu Chrome, con Claude in Chrome (no con el navegador integrado de la app, que pide tocar «Guardar» en cada descarga): iniciás sesión vos una sola vez (Claude nunca usa tu contraseña) y en cada video se reemplaza la vista previa por el WAV original, sin marca de agua. Si no hay sesión o falla la descarga, el video se entrega igual con la vista previa y te avisa.
+
+## Reporte diario
+
+Al terminar una edición, `scripts/reporte.py` avisa a n8n y a las 20:00 (Buenos Aires) sale el resumen por Gmail. Es automático y nunca frena una entrega: sin internet, el aviso queda en cola y sale con la próxima edición. Usa la URL y el token de `~/.config/edicion/whisper_remoto.json`.
+
+Para elegir el nombre que aparece en el reporte, agregá `"quien": "Tu nombre"` a ese archivo; si no, se usa el usuario de la compu. Para no avisar en una corrida: `EDICION_REPORTE=0`.
