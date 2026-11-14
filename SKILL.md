@@ -4,11 +4,11 @@ description: Produce un video de motion graphics con voz en off a partir de un G
 ---
 
 # /motion — guion → video con voz en off
-Entrada: guion (texto o archivo). Salida: `<carpeta>/<NAME>_MOTION/` (MP4, `Assets/` solo si hay originales de Envato, `LEEME.md`, `.work/`). **No generar XML de Premiere ni SRT.** Español rioplatense (voseo); avisar el avance entre pasos largos.
+Entrada: guion (texto o archivo). Salida: `<carpeta>/<NAME>_MOTION/` (MP4, `Assets/` solo si hay originales de Envato, `.work/`; **sin LEEME**). **No generar XML de Premiere ni SRT.** Español rioplatense (voseo); avisar el avance entre pasos largos.
 **Autonomía:** `/motion` autoriza todos los pasos (voz, SFX, música, render, mezcla); tras el paso 0 no pedir confirmaciones. Frenar solo en: voz > 2 min, falla de ElevenLabs, marca nueva.
 `SK` = carpeta de la skill (`~/.claude/skills/motion` o `~/.codex/skills/motion`). `PY` = `$SK/.venv/bin/python -I` (Windows `$SK\.venv\Scripts\python.exe -I`) para todos los `.py`. Si `doctor.py` marca ✗: `bash $SK/scripts/install.sh` (Windows: `install.ps1` con `powershell -ExecutionPolicy Bypass -File`).
 **No leer `engine.html` ni `render.js`: todo lo necesario está en `reference/api.md`.** Catálogo de escenas y tokens de look: `reference/escenas.md` · estilos: `estilos.md` · ejemplo: `reference/ejemplo/` · recetas: leer el índice (`node $SK/scripts/receta.js`) y como mucho 3 (`receta.js R03 R07`).
-Leer solo si aplica: `marca-nueva.md` · `voces.md` (otra voz, ElevenLabs, `say`/`pause`) · `envato.md` · `sfx.md` (SFX literales) · `versiones.md` (LEEME, v2) · `preferencias.md`.
+Leer solo si aplica: `marca-nueva.md` · `voces.md` (otra voz, ElevenLabs, `say`/`pause`) · `envato.md` · `sfx.md` (SFX literales) · `versiones.md` (v2) · `preferencias.md`.
 **Dos modos** (conviven): **`libre`** = el video se dibuja a mano en canvas, con un protagonista ilustrado y un mundo propio (`reference/libre.md`); **`placas`** = catálogo de escenas del motor (pasos 3b–5 de abajo). Modo = el que pida el usuario para este video ("en modo placas", "en modo libre"); si no dice, `prefs.json` → `"modo"` (default `placas` si falta). Va en `config.json` → `"modo"`.
 **Cada video tiene diseño propio** aunque sea la misma marca (la marca fija fuentes y colores): nunca reutilizar el look ni el concept de un video anterior.
 
@@ -24,7 +24,7 @@ Preguntar **solo lo que falte, en una sola tanda**; si no falta nada, arrancar. 
   "format": "9:16", "fps": 30, "brand": "<slug>", "tail": 1.6, "keywords": ["palabra","clave"], "sfx_max": 6, "music": {}, "modo": "libre|placas" }
 ```
 `keywords` = 3–6 palabras del guion resaltadas. Opcional: `"captions": false`.
-**Cronómetro por etapa** (va a `timing.md`): al arrancar cada etapa propia, `$PY $SK/scripts/timing.py fase "<work>" "<etapa>"`, encadenado con el primer comando de esa etapa (`… && <comando>`). Etapas: `Guion y beats` · `Música` · `Tratamiento y look` (libre: `Historial y tratamiento`) · `Storyboard` (libre: `Storyboard y anim.js`) · `Chequeo` · `Revisión de director` · `Cierre y LEEME`; cada vuelta extra de arreglos, `Corrección: <qué>` (p. ej. `Corrección: ✗ de --check`, `Corrección: QC`). Antes de preguntarle algo al usuario: `timing.py espera "<work>" "<qué>"`; con la respuesta, la `fase` que sigue cierra la espera.
+**Cronómetro por etapa** (va a `timing.md`): al arrancar cada etapa propia, `$PY $SK/scripts/timing.py fase "<work>" "<etapa>"`, encadenado con el primer comando de esa etapa (`… && <comando>`). Etapas: `Guion y beats` · `Música` · `Tratamiento y look` (libre: `Historial y tratamiento`) · `Storyboard` (libre: `Storyboard y anim.js`) · `Chequeo` · `Revisión de director` · `Cierre`; cada vuelta extra de arreglos, `Corrección: <qué>` (p. ej. `Corrección: ✗ de --check`, `Corrección: QC`). Antes de preguntarle algo al usuario: `timing.py espera "<work>" "<qué>"`; con la respuesta, la `fase` que sigue cierra la espera.
 **Logo: nunca va en el video por defecto.** El logo de la marca es solo referencia para sacar colores, estilo y tipografías. Solo si el usuario pide expresamente el logo en el video: `"logo": true`; si la marca lo fija (`brand.json` → `"logo_video": true`) va siempre, salvo `"logo": false` (y `"logo_corner": false` para que no quede en la esquina).
 
 ## 2 · Guion → beats → voz
@@ -36,7 +36,7 @@ Si el usuario dio una: `"music": {"path": "/abs/tema.mp3", "offset": 0}`. Si no,
 Después: `$PY $SK/scripts/beats.py "<work>"` → `beats.json` (los cortes caen en el golpe).
 
 ## Modo libre: 3b–5
-Seguir `reference/libre.md` (historial → `tratamiento.json` → `storyboard.md` → `libre.js init` → `anim.js` → `libre.js stills` + revisión de director → `finish.sh` → LEEME → respuesta como en el paso 5). Los pasos 3b–4 y 5.1–5.2 de abajo son solo del modo placas; 4b (sonido) y 5.3–5.5 valen para los dos.
+Seguir `reference/libre.md` (historial → `tratamiento.json` → `storyboard.md` → `libre.js init` → `anim.js` → `libre.js stills` + revisión de director → `finish.sh` → respuesta como en el paso 5). Los pasos 3b–4 y 5.1–5.2 de abajo son solo del modo placas; 4b (sonido) y 5.3–5.4 valen para los dos.
 
 ## 3b · Tratamiento (obligatorio, corto) — modo placas
 Escribir **3 ideas madre de una línea** (metáfora visual que atraviese todo) y elegir la más audaz que se entienda. De ahí salen el **objeto héroe** (reaparece y se transforma en 3+ escenas), los **3–4 momentos fuertes** (gancho, giro, dato, remate: slam, punch, `layers`/`morph`, concept) y los match cut entre temas. Va en `look.json` → `"tratamiento"` (2–3 líneas); no mostrárselo al usuario.
@@ -68,9 +68,8 @@ Automático (whoosh suave, ding/pop/click); el video arranca sin SFX. **Prohibid
 ## 5 · Chequeo, director y entrega
 1. `$PY $SK/scripts/timing.py fase "<work>" "Chequeo" && node $SK/scripts/render.js "<work>" --check` → plan (escenas, SFX, avisos de **Dirección**) + `sheet.jpg` (5 cuadros por escena; los primeros muestran cómo ENTRA). Corregir todos los ✗ (frenan el render) y ⚠️, textos achicados ("se achicó al N %"), superposiciones con subtítulos, poco contraste y escenas vacías a la mitad. **Mirada 2.**
 2. **Revisión de director (una sola ronda, máx. 2 escenas rehechas):** primero `$PY $SK/scripts/timing.py fase "<work>" "Revisión de director"` (el `--check` de la Mirada 3 queda dentro de esta etapa: no marcar otro `Chequeo`). Puntuar cada escena 1–5 en *potencia* (movimiento con intención), *idea* (cuenta algo o decora) y *continuidad* (objeto héroe / estilo); rehacer las **2 peores** (más movimiento, otra receta, otra transición) sin iterar más; puntajes en `<work>/direccion.md` (una línea por escena). Correr de nuevo `--check` y mirar la hoja: **Mirada 3** (solo 3 miradas por video).
-3. **Cierre** (en segundo plano): `$PY $SK/scripts/timing.py fase "<work>" "Cierre y LEEME" && bash $SK/scripts/finish.sh "<work>"` (Windows: `finish.ps1`). Hace render (`render.js` o, en modo libre, `libre.js render`) + `mix.py` + `qc.py` (duración vs. voz, audio, cuadros negros/congelados) + historial (`look.js log` / `libre.js log`) + `timing.py report`; detalle en `<work>/finish.log`. Si el QC avisa algo, corregir y repetir el paso afectado. No mirar cuadros del MP4.
-4. `LEEME.md` en `out_dir` (contenido en `versiones.md` → *LEEME.md*; incluye el modo y el consumo del plan).
-5. Responder corto: ruta del MP4, duración, voz y música (una línea de por qué y "música licenciada: <tema> de <autor>" más el aviso de Claim Clear si corresponde; o que quedó la preview y por qué), escenas destacadas, tiempo total.
+3. **Cierre** (en segundo plano): `$PY $SK/scripts/timing.py fase "<work>" "Cierre" && bash $SK/scripts/finish.sh "<work>"` (Windows: `finish.ps1`). Hace render (`render.js` o, en modo libre, `libre.js render`) + `mix.py` + `qc.py` (duración vs. voz, audio, cuadros negros/congelados) + historial (`look.js log` / `libre.js log`) + `timing.py report`; detalle en `<work>/finish.log`. Si el QC avisa algo, corregir y repetir el paso afectado. No mirar cuadros del MP4.
+4. Responder corto (no se genera `LEEME.md`): ruta del MP4, duración, voz y música (una línea de por qué y "música licenciada: <tema> de <autor>" más el aviso de Claim Clear si corresponde; o que quedó la preview y por qué), escenas destacadas, tiempo total.
 
 ## Versiones (v2, ajustes)
 Reusar `.work` y repetir desde el paso que cambia (música → `mix.py`; visual → render + mix; texto → tts + todo): `versiones.md`.

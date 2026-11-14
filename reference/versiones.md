@@ -1,9 +1,6 @@
-# LEEME y versiones
+# Versiones
 
-No se genera proyecto de Premiere (XML) ni SRT: la entrega es el MP4.
-
-## LEEME.md (en `out_dir`)
-- Modo (`libre` o `placas`), voz usada, marca, look (placas: el `concepto` de look.json; libre: idea, mundo y protagonista de `tratamiento.json`), formato, duración, estructura (tabla escena → texto → tiempo), música (con `envato.py report` y si falta licenciar), SFX, tiempo de procesamiento, **consumo del plan** (si hay una herramienta de uso, como `get_usage` en la app de Claude: % de la ventana de 5 h y semanal al empezar el paso 0 y al entregar; aclarar que otras sesiones en paralelo también suman), cómo pedir cambios (el texto de un gráfico se cambia pidiéndoselo a Claude y se re-renderiza).
+No se genera proyecto de Premiere (XML) ni SRT: la entrega es el MP4 (sin LEEME).
 
 ## Versiones (v2, ajustes)
 Reusar `.work`: cambiar `script.json` (voz/texto: solo se regeneran los beats tocados) y/o `story.js`, apuntar `out_dir` a `<NAME>_MOTION_v2` y repetir desde el paso que corresponda:

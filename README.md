@@ -11,7 +11,7 @@ Skill para **Claude Code** y **Codex** (macOS y Windows). Le das un **guion** y 
 - **Subtítulos dinámicos** con la palabra activa resaltada, quemados en el video.
 - **Música de Envato** con volumen automático (fuerte al inicio, baja bajo la voz, sube al cierre) y **SFX sutiles**: los genéricos salen de la librería de la skill [edicion](https://github.com/gustavopascaner/edicion) y los específicos (notificación, latido, tipeo…) se generan con ElevenLabs una sola vez y quedan en tu biblioteca local (`scripts/sfx.py`).
 - **Dirección**: avisa si el ritmo, la variedad o el gancho no están bien, y arma hojas de prueba antes del render.
-- Entrega `NOMBRE.mp4` (H.264/AAC, −14 LUFS) y un `LEEME.md` (sin XML de Premiere ni SRT). Lo que baja de Envato se copia a `Assets/Envato` y se borra de Descargas para no duplicar.
+- Entrega `NOMBRE.mp4` (H.264/AAC, −14 LUFS) (sin LEEME, XML de Premiere ni SRT). Lo que baja de Envato se copia a `Assets/Envato` y se borra de Descargas para no duplicar.
 
 Las instrucciones para el agente están en [`SKILL.md`](SKILL.md).
 

@@ -13,7 +13,7 @@ uso:
   envato.py use <work> <clave> <búsqueda>#<n>     (ej. kl video_doctor-talking#3) → registra en config.json (broll[clave] o music)
   envato.py collect <work> [--from ~/Downloads] [--file <clave> <archivo>]  → reemplaza vistas previas por originales licenciados
         (copia a Assets/Envato y borra de Descargas lo bajado, para no duplicar)
-  envato.py report <work>                          → tabla de procedencia (para el LEEME)
+  envato.py report <work>                          → tabla de procedencia (para la respuesta final)
 """
 import os as _o,sys as _s,subprocess as _sp
 if _o.name=='nt' and __name__=='__main__' and not _s.flags.utf8_mode: _s.exit(_sp.run([_s.executable,'-X','utf8','-I',_o.path.abspath(__file__),*_s.argv[1:]]).returncode)  # Windows: acentos en UTF-8
